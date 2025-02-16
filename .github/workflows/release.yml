@@ -1,0 +1,48 @@
+name: Windows Release Build
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Setup CMake
+        uses: lukka/get-cmake@latest
+
+      - name: Configure CMake
+        run: |
+          mkdir build
+          cd build
+          cmake .. -G "Visual Studio 17 2022" -A x64
+
+      - name: Build Plugin
+        run: |
+          cd build
+          cmake --build . --config Release
+
+      - name: Package Plugin
+        run: |
+          cd build
+          cpack -G ZIP
+
+      - name: Install WiX Toolset
+        run: choco install -y wixtoolset
+
+      - name: Compile MSI Installer
+        run: |
+          "C:\Program Files (x86)\WiX Toolset v3.11\bin\candle.exe" installer.wxs
+          "C:\Program Files (x86)\WiX Toolset v3.11\bin\light.exe" installer.wixobj -out OBS_Twitch_Betting_Limit_Setup.msi
+
+      - name: Upload to GitHub Releases
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            build/*.zip
+            OBS_Twitch_Betting_Limit_Setup.msi
+          token: ${{ secrets.GITHUB_TOKEN }}
