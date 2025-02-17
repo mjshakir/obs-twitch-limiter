@@ -6,22 +6,40 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Add custom plugin source files
-target_sources(
-  ${CMAKE_PROJECT_NAME} PRIVATE plugin-main.c betting_limit/plugin.cpp
-                                betting_limit/eventsub.cpp)
+target_sources(${CMAKE_PROJECT_NAME} PRIVATE plugin-main.c betting_limit/plugin.cpp betting_limit/eventsub.cpp)
 
 # Include your plugin directory
-target_include_directories(${CMAKE_PROJECT_NAME}
-                           PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/betting_limit)
+target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/betting_limit)
 
 # Link required libraries
+# Find Boost components
 find_package(Boost REQUIRED COMPONENTS json system asio)
+
+# Find WebSocketPP
 find_package(websocketpp REQUIRED)
+
+# Find RapidJSON
 find_package(RapidJSON REQUIRED)
 
+# Include directories
+if(Boost_FOUND)
+  include_directories(${Boost_INCLUDE_DIRS})
+  link_directories(${Boost_LIBRARY_DIRS})
+endif()
+
+if(websocketpp_FOUND)
+  include_directories(${websocketpp_INCLUDE_DIRS})
+endif()
+
+if(RapidJSON_FOUND)
+  include_directories(${RapidJSON_INCLUDE_DIRS})
+endif()
+
+# Link dependencies to the plugin
 target_link_libraries(
-  ${CMAKE_PROJECT_NAME} PRIVATE OBS::libobs Boost::json Boost::system
-                                Boost::asio websocketpp RapidJSON::RapidJSON)
+  ${CMAKE_PROJECT_NAME}
+  PRIVATE OBS::libobs Boost::json Boost::system Boost::asio websocketpp RapidJSON
+)
 
 # Add packaging for Windows .zip release if(WIN32) install( TARGETS
 # ${CMAKE_PROJECT_NAME} RUNTIME DESTINATION "obs-plugins/64bit" LIBRARY
