@@ -33,6 +33,9 @@ runs:
         CODESIGN_TEAM: ${{ inputs.codesignTeam }}
       run: |
         : Run macOS Build
+        
+        brew update
+        brew install boost rapidjson websocketpp
 
         local -a build_args=(--config ${{ inputs.config }})
         if (( ${+RUNNER_DEBUG} )) build_args+=(--debug)
@@ -61,6 +64,9 @@ runs:
       run: |
         : Run Ubuntu Build
 
+        sudo apt-get update
+        sudo apt-get install -y libboost-all-dev rapidjson-dev websocketpp-dev libssl-dev
+
         local -a build_args=(
           --target ubuntu-${{ inputs.target }}
           --config ${{ inputs.config }}
@@ -74,6 +80,17 @@ runs:
       shell: pwsh
       run: |
         # Run Windows Build
+
+        choco install boost-msvc-14.3 -y
+        
+        # Install RapidJSON
+        git clone https://github.com/microsoft/vcpkg.git
+        .\vcpkg\bootstrap-vcpkg.bat
+        .\vcpkg\vcpkg install rapidjson
+        
+        # Install WebSocketPP
+        .\vcpkg\vcpkg install websocketpp
+        
         if ( $Env:RUNNER_DEBUG -ne $null ) {
           Set-PSDebug -Trace 1
         }
