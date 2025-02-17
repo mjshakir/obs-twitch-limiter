@@ -28,7 +28,15 @@ runs:
       shell: bash
       run: |
         sudo apt-get update
-        sudo apt-get install -y libboost-all-dev rapidjson-dev websocketpp-dev
+        sudo apt-get install -y libboost-all-dev rapidjson-dev
+
+        # Install WebSocketPP
+        git clone --depth 1 https://github.com/zaphoyd/websocketpp.git
+        cd websocketpp
+        mkdir build && cd build
+        cmake ..
+        make -j$(nproc)
+        sudo make install
 
     - name: Install Dependencies 🛍️ (macOS)
       if: runner.os == 'macOS'
