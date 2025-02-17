@@ -1,7 +1,7 @@
 # Use existing OBS Plugin Template configurations
 include(helpers)
 
-# Set C++ standard globally (if needed)
+# Set C++ standard globally
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
@@ -18,12 +18,15 @@ target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_
 # Link required libraries
 find_package(Boost REQUIRED COMPONENTS json system asio)
 find_package(websocketpp REQUIRED)
+find_package(RapidJSON REQUIRED)
 
 target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE
     OBS::libobs
     Boost::json
+    Boost::system
     Boost::asio
     websocketpp
+    RapidJSON::RapidJSON
 )
 
 # Add packaging for Windows .zip release
