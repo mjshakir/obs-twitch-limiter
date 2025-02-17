@@ -13,7 +13,7 @@ target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_
 
 # Link required libraries
 # Find Boost components
-find_package(Boost REQUIRED COMPONENTS json system asio)
+find_package(Boost REQUIRED)
 
 # Find WebSocketPP
 find_package(websocketpp REQUIRED)
