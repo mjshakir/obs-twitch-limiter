@@ -38,7 +38,7 @@ endif()
 # Link dependencies to the plugin
 target_link_libraries(
   ${CMAKE_PROJECT_NAME}
-  PRIVATE OBS::libobs Boost::json Boost::system Boost::asio websocketpp RapidJSON
+  PRIVATE OBS::libobs Boost::json Boost::system websocketpp RapidJSON
 )
 
 # Add packaging for Windows .zip release if(WIN32) install( TARGETS
