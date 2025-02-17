@@ -25,8 +25,8 @@ extern "C" {
 #endif
 bool obs_module_load(void);
 void obs_module_unload(void);
-obs_properties_t* obs_module_get_settings(void*);
-void obs_module_update_settings(obs_data_t*);
+obs_properties_t* obs_module_get_settings(void* data);
+void obs_module_update_settings(obs_data_t* settings);
 #ifdef __cplusplus
 }
 #endif
