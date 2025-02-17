@@ -25,8 +25,8 @@ extern "C" {
 #endif
 bool obs_module_load(void);
 void obs_module_unload(void);
-obs_properties_t* obs_module_get_settings(void* data);
-void obs_module_update_settings(obs_data_t* settings);
+obs_properties_t *obs_module_get_settings(void *data);
+void obs_module_update_settings(obs_data_t *settings);
 #ifdef __cplusplus
 }
 #endif
@@ -34,16 +34,16 @@ void obs_module_update_settings(obs_data_t* settings);
 OBS_DECLARE_MODULE()
 OBS_MODULE_USE_DEFAULT_LOCALE("obs-twitch-plugin", "en-US")
 
-bool obs_module_load(void) {
-    return true;
+bool obs_module_load(void)
+{
+	return true;
 }
 
-void obs_module_unload(void) {
+void obs_module_unload(void) {}
+
+obs_properties_t *obs_module_get_settings(void *data)
+{
+	return NULL; // Will be handled in the C++ plugin
 }
 
-obs_properties_t* obs_module_get_settings(void* data) {
-    return NULL;  // Will be handled in the C++ plugin
-}
-
-void obs_module_update_settings(obs_data_t* settings) {
-}
+void obs_module_update_settings(obs_data_t *settings) {}
