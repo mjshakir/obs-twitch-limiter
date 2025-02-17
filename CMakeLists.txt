@@ -17,7 +17,7 @@ find_package(libobs REQUIRED)
 target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE OBS::libobs)
 
 # Include betting_limit
-add_subdirectory(betting_limit)
+add_subdirectory(src)
 
 if(ENABLE_FRONTEND_API)
   find_package(obs-frontend-api REQUIRED)
