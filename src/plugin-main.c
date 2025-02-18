@@ -19,35 +19,39 @@ with this program. If not, see <https://www.gnu.org/licenses/>
 #include <obs-module.h>
 #include <plugin-support.h>
 
-// Declare C++ functions so they can be called in C
 #ifdef __cplusplus
 extern "C" {
 #endif
+
 bool obs_module_load(void);
 void obs_module_unload(void);
 obs_properties_t *obs_module_get_settings(void *data);
 void obs_module_update_settings(obs_data_t *settings);
+
 #ifdef __cplusplus
 }
 #endif
 
 OBS_DECLARE_MODULE()
-OBS_MODULE_USE_DEFAULT_LOCALE("obs-twitch-plugin", "en-US")
+OBS_MODULE_USE_DEFAULT_LOCALE("obs_twitch_plugin", "en-US")
 
+// Minimal forwarding implementations:
 bool obs_module_load(void)
 {
-	return true;
+	return obs_module_load(); // Or, if implemented in C++, call the C++ implementation.
 }
 
-void obs_module_unload(void) {}
+void obs_module_unload(void)
+{
+	obs_module_unload();
+}
 
 obs_properties_t *obs_module_get_settings(void *data)
 {
-	(void)data;
-	return NULL; // Will be handled in the C++ plugin
+	return obs_module_get_settings(data);
 }
 
 void obs_module_update_settings(obs_data_t *settings)
 {
-	(void)settings;
+	obs_module_update_settings(settings);
 }
