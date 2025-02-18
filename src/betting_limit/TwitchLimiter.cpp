@@ -69,6 +69,7 @@ obs_properties_t *TwitchLimiter::get_settings(void *data) const
 	std::unique_ptr<obs_properties_t, decltype(&obs_properties_destroy)> props(obs_properties_create(),
 										   &obs_properties_destroy);
 
+	// Add a boolean property for enabling/disabling the custom bet limit.
 	obs_property_t *limit_toggle =
 		obs_properties_add_bool(props.get(), "enable_custom_bet_limit", "Enable Custom Bet Limit");
 	obs_property_set_modified_callback(limit_toggle,
@@ -77,24 +78,31 @@ obs_properties_t *TwitchLimiter::get_settings(void *data) const
 							   props, prop, static_cast<obs_data_t *>(data));
 					   });
 
+	// Add integer properties.
 	obs_properties_add_int(props.get(), "max_bet_limit", "Max Bet Limit", 100, 100000, 100);
 	obs_properties_add_int(props.get(), "bet_timeout_duration", "Bet Timeout Duration (seconds)", 5, 300, 5);
 
+	// Add button property for resetting bet limit.
 	obs_properties_add_button(props.get(), "reset_bet_limit", "Reset Bet Limit",
 				  [](obs_properties_t *props, obs_property_t *prop, void *data) -> bool {
 					  return TwitchLimiter::instance().reset_bet_limit(
 						  props, prop, static_cast<obs_data_t *>(data));
 				  });
+
+	// Add button property for resetting bet timeout.
 	obs_properties_add_button(props.get(), "reset_bet_timeout", "Reset Bet Timeout",
 				  [](obs_properties_t *props, obs_property_t *prop, void *data) -> bool {
 					  return TwitchLimiter::instance().reset_bet_timeout(
 						  props, prop, static_cast<obs_data_t *>(data));
 				  });
+
+	// Add button property for resetting the overlay.
 	obs_properties_add_button(props.get(), "reset_overlay", "Reset Overlay",
 				  [](obs_properties_t *props, obs_property_t *prop, void *data) -> bool {
 					  return TwitchLimiter::instance().reset_overlay(props, prop, data);
 				  });
 
+	// Add text property for the WebSocket URL.
 	obs_property_t *ws_url_prop =
 		obs_properties_add_text(props.get(), "websocket_url", "WebSocket URL", OBS_TEXT_DEFAULT);
 	obs_property_set_modified_callback(ws_url_prop,
@@ -102,20 +110,25 @@ obs_properties_t *TwitchLimiter::get_settings(void *data) const
 						   return TwitchLimiter::instance().validate_websocket_url(
 							   props, prop, static_cast<obs_data_t *>(data));
 					   });
+
+	// Add button property to reset the WebSocket URL.
 	obs_properties_add_button(props.get(), "reset_websocket_url", "Reset WebSocket URL",
 				  [](obs_properties_t *props, obs_property_t *prop, void *data) -> bool {
 					  return TwitchLimiter::instance().reset_websocket_url(
 						  props, prop, static_cast<obs_data_t *>(data));
 				  });
+
+	// Add button property to manually reconnect to EventSub.
 	obs_properties_add_button(props.get(), "manual_reconnect_eventsub", "Reconnect to Twitch EventSub",
 				  [](obs_properties_t *props, obs_property_t *prop, void *data) -> bool {
 					  return TwitchLimiter::instance().manual_reconnect_eventsub(
 						  props, prop, static_cast<obs_data_t *>(data));
 				  });
 
+	// Add read-only text property for WebSocket status.
 	obs_property_t *ws_status =
 		obs_properties_add_text(props.get(), "ws_status", "WebSocket Status", OBS_TEXT_INFO);
-	obs_property_set_enabled(ws_status, false); // Read-only field
+	obs_property_set_enabled(ws_status, false);
 
 	return props.release();
 }
