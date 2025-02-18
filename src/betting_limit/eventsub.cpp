@@ -1,7 +1,8 @@
 #include "eventsub.hpp"
+#include <obs.h>
 #include <thread>
 #include <rapidjson/document.h>
-#include <obs.h>
+
 //--------------------------------------------------------------
 // Definition
 //--------------------------------------------------------------
@@ -49,7 +50,10 @@ void EventSub::initialize(void)
 	std::thread([this]() { m_io_context.run(); }).detach();
 
 	m_reconnect_timer.expires_after(std::chrono::seconds(10));
-	m_reconnect_timer.async_wait(&check_connection_status);
+	m_reconnect_timer.async_wait([this](const boost::system::error_code &ec) {
+		this->check_connection_status(ec);
+	});
+	
 
 	async_connect();
 	obs_log_info("EventSub connection initialized.");
@@ -69,14 +73,14 @@ void EventSub::shutdown(void)
 void EventSub::set_max_bet_limit(const size_t &limit)
 {
 	m_max_bet_limit.store(limit);
-	obs_log_info("New Bet Timeout Duration: %zu seconds", bet_timeout_duration);
+	obs_log_info("New Bet Timeout Duration: %zu seconds", limit);
 }
 
 // **🔹 Set Bet Timeout Duration**
 void EventSub::set_bet_timeout_duration(const size_t &duration)
 {
 	m_bet_timeout_duration.store(duration);
-	obs_log_info("New Bet Timeout Duration: %zu seconds", bet_timeout_duration);
+	obs_log_info("New Bet Timeout Duration: %zu seconds", duration);
 }
 
 // **🔹 Set OBS Callbacks**
@@ -129,7 +133,7 @@ void EventSub::async_connect(void)
 		// Uses `m_resolver` to resolve Twitch's EventSub WebSocket server
 		m_resolver.async_resolve(
 			EVENTSUB_HOST.data(), EVENTSUB_PORT.data(),
-			[this](const boost::system::error_code &ec, tcp::resolver::results_type results) {
+			[this](const boost::system::error_code &ec, boost::asio::ip::tcp::resolver::results_type results) {
 				if (!ec) {
 					m_websocket.next_layer().async_connect(
 						*results.begin(),
@@ -183,13 +187,13 @@ void EventSub::async_listenForBets(void)
 		return;
 	}
 
-	m_websocket.async_read(m_buffer, [this](const boost::system::error_code &ec, size_t bytes_transferred) {
+	m_websocket.async_read(m_buffer, [this](const boost::system::error_code &ec, const size_t & bytes_transferred) {
 		handle_read(ec, bytes_transferred, m_buffer);
 	});
 }
 
 // **🔹 Async WebSocket Read Handler**
-void EventSub::handle_read(const boost::system::error_code &ec, size_t bytes_transferred,
+void EventSub::handle_read(const boost::system::error_code &ec, const size_t & bytes_transferred,
 			   boost::beast::flat_buffer &buffer)
 {
 	if (ec) {
