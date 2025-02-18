@@ -43,10 +43,7 @@ if(obs-frontend-api_FOUND)
 endif()
 
 # Link dependencies to the plugin
-target_link_libraries(
-  ${CMAKE_PROJECT_NAME}
-  PRIVATE OBS::libobs Boost::json Boost::system ${OBS_FRONTEND_API_LIBRARIES}
-)
+target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE OBS::libobs Boost::json Boost::system ${OBS_FRONTEND_API_LIBRARIES})
 
 # Add packaging for Windows .zip release if(WIN32) install( TARGETS
 # ${CMAKE_PROJECT_NAME} RUNTIME DESTINATION "obs-plugins/64bit" LIBRARY
