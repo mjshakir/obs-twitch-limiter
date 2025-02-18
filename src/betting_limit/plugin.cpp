@@ -134,7 +134,7 @@ bool reset_bet_limit(obs_properties_t *props, obs_property_t *prop, void *data)
 
 	obs_module_update_settings(settings.get());
 
-	blog(LOG_INFO, "Reset Bet Limit to default: %d", DEFAULT_MAX_BET_LIMIT);
+	blog(LOG_INFO, "Reset Bet Limit to default: %ld", DEFAULT_MAX_BET_LIMIT);
 	return true;
 }
 
@@ -149,7 +149,7 @@ bool reset_bet_timeout(obs_properties_t *props, obs_property_t *prop, void *data
 
 	obs_module_update_settings(settings.get());
 
-	blog(LOG_INFO, "Reset Bet Timeout to default: %d seconds", DEFAULT_BET_TIMEOUT);
+	blog(LOG_INFO, "Reset Bet Timeout to default: %ld seconds", DEFAULT_BET_TIMEOUT);
 	return true;
 }
 
@@ -244,8 +244,4 @@ void update_websocket_status(bool connected)
 
 	// OBS Logging (for debugging and logs)
 	blog(LOG_INFO, "WebSocket Status: %s", connected ? "Connected to Twitch EventSub!" : "WebSocket Disconnected!");
-
-	// Display a message in OBS UI (using OBS_FRONTEND_INFO)
-	obs_frontend_push_ui_translation(OBS_TEXT_INFO,
-					 connected ? "Connected to Twitch EventSub!" : "EventSub Disconnected!");
 }
