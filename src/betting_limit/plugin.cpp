@@ -2,10 +2,13 @@
 #include "eventsub.hpp"
 #include <obs-properties.h>
 #include <obs-module.h>
+#include <obs-frontend-api.h>
+#include <obs.h>
 #include <memory>
 #include <thread>
 #include <regex>
 #include <chrono>
+#include <string>
 #include <boost/asio.hpp>
 #include <boost/asio/steady_timer.hpp>
 
@@ -20,7 +23,7 @@ static size_t bet_timeout_duration = DEFAULT_BET_TIMEOUT;
 static std::string websocket_url = std::string(DEFAULT_WEBSOCKET_URL);
 static bool custom_bet_limit_enabled = true; // Default: Enabled
 static boost::asio::io_context overlay_io_context;
-static std::unique_ptr<boost::asio::steady_timer> overlay_timer = nullptr;
+static boost::asio::steady_timer overlay_timer(overlay_io_context);
 
 // Smart pointer for overlay management
 std::unique_ptr<obs_source_t, decltype(&obs_source_release)> overlay_source(nullptr, &obs_source_release);
@@ -37,13 +40,9 @@ void show_overlay_notification(std::string_view message, size_t duration)
 		obs_source_update(overlay_source.get(), settings.get());
 	}
 
-	if (!overlay_timer) {
-		overlay_timer = std::make_unique<boost::asio::steady_timer>(overlay_io_context);
-	}
-
 	// Set timer to auto-hide overlay
-	overlay_timer->expires_after(std::chrono::seconds(duration));
-	overlay_timer->async_wait([](const boost::system::error_code &) { hide_overlay_notification(); });
+	overlay_timer.expires_after(std::chrono::seconds(duration));
+	overlay_timer.async_wait([](const boost::system::error_code &) { hide_overlay_notification(); });
 
 	// Start Boost.Asio event loop in background
 	std::thread([] { overlay_io_context.run(); }).detach();
@@ -53,9 +52,7 @@ void show_overlay_notification(std::string_view message, size_t duration)
 void hide_overlay_notification(void)
 {
 	overlay_source.reset(); // Smart pointer handles cleanup
-	if (overlay_timer) {
-		overlay_timer->cancel(); // Stop any active timer
-	}
+	overlay_timer.cancel();
 }
 
 bool reset_overlay(obs_properties_t *props, obs_property_t *prop, void *data)
@@ -92,9 +89,12 @@ obs_properties_t *obs_module_get_settings(void *data)
 	std::unique_ptr<obs_properties_t, decltype(&obs_properties_destroy)> props(obs_properties_create(),
 										   &obs_properties_destroy);
 
-	obs_property_t *limit_toggle = obs_properties_add_bool(props.get(), "enable_custom_bet_limit",
-							       "Enable Custom Bet Limit", custom_bet_limit_enabled);
-	obs_property_set_modified_callback(limit_toggle, toggle_custom_bet_limit);
+	obs_property_t *limit_toggle =
+		obs_properties_add_bool(props.get(), "enable_custom_bet_limit", "Enable Custom Bet Limit");
+	obs_property_set_modified_callback(limit_toggle,
+					   [](obs_properties_t *, obs_property_t *, obs_data_t *) -> bool {
+						   return toggle_custom_bet_limit(nullptr, nullptr, nullptr);
+					   });
 
 	static_cast<void>(obs_properties_add_int(props.get(), "max_bet_limit", "Max Bet Limit", 100, 100000, 100));
 	static_cast<void>(obs_properties_add_int(props.get(), "bet_timeout_duration", "Bet Timeout Duration (seconds)",
