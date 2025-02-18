@@ -25,11 +25,11 @@ bool reset_bet_limit(obs_properties_t *props, obs_property_t *prop, void *data);
 bool reset_bet_timeout(obs_properties_t *props, obs_property_t *prop, void *data);
 bool manual_reconnect_eventsub(obs_properties_t *props, obs_property_t *prop, void *data);
 bool reset_websocket_url(obs_properties_t *props, obs_property_t *prop, void *data);
-bool validate_websocket_url(obs_properties_t *props, obs_property_t *prop, void *data);
+bool validate_websocket_url(obs_properties_t *props, obs_property_t *prop, obs_data_t *settings);
 
 void show_overlay_notification(std::string_view message, size_t duration);
 void hide_overlay_notification(void);
 bool reset_overlay(obs_properties_t *props, obs_property_t *prop, void *data);
 
 bool valid_websocket_url(std::string_view url);
-void update_websocket_status(bool is_connected);
+void update_websocket_status(bool connected);
