@@ -46,7 +46,7 @@ bool TwitchLimiter::initialize(void) const
 	EventSub::instance().set_status_callback([this](bool connected) { update_websocket_status(connected); });
 
 	EventSub::instance().set_overlay_callback(
-		[this](std::string_view msg, size_t duration) { show_overlay_notification(msg, duration); });
+		[this](std::string_view msg, size_t duration) { this->show_overlay_notification(msg, duration); });
 
 	EventSub::instance().initialize();
 	return true;
@@ -223,7 +223,7 @@ void TwitchLimiter::show_overlay_notification(std::string_view message, size_t d
 
 	// Set timer to auto-hide overlay
 	m_reconnect_timer.expires_after(std::chrono::seconds(duration));
-	m_reconnect_timer.async_wait([](const boost::system::error_code &) { hide_overlay_notification(); });
+	m_reconnect_timer.async_wait([this](const boost::system::error_code &) { this->hide_overlay_notification(); });
 
 	// Start Boost.Asio event loop in background
 	std::thread([this]() { m_io_context.run(); }).detach();
