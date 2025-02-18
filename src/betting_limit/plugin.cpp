@@ -175,22 +175,23 @@ bool reset_websocket_url(obs_properties_t *props, obs_property_t *prop, void *da
 
 bool validate_websocket_url(obs_properties_t *props, obs_property_t *prop, obs_data_t *settings)
 {
-    static_cast<void>(props);
-    static_cast<void>(prop);
+	static_cast<void>(props);
+	static_cast<void>(prop);
 
-    const char *new_url = obs_data_get_string(settings, "websocket_url");
+	const char *new_url = obs_data_get_string(settings, "websocket_url");
 
-    if (new_url && *new_url) {
-        if (valid_websocket_url(new_url)) {
-            websocket_url = std::string(new_url);
-            obs_log_info("WebSocket URL updated: %s", websocket_url.c_str());
-        } else {
-            obs_log_info("Invalid WebSocket URL entered: %s", new_url);
-            obs_data_set_string(settings, "websocket_url", websocket_url.c_str()); // Reset to previous valid URL
-        }
-    }
+	if (new_url && *new_url) {
+		if (valid_websocket_url(new_url)) {
+			websocket_url = std::string(new_url);
+			obs_log_info("WebSocket URL updated: %s", websocket_url.c_str());
+		} else {
+			obs_log_info("Invalid WebSocket URL entered: %s", new_url);
+			obs_data_set_string(settings, "websocket_url",
+					    websocket_url.c_str()); // Reset to previous valid URL
+		}
+	}
 
-    return true;
+	return true;
 }
 
 // Update settings dynamically
@@ -238,5 +239,4 @@ void update_websocket_status(bool connected)
 	obs_data_t *settings = obs_data_create();
 	obs_data_set_string(settings, "ws_status", connected ? "Connected ✅" : "Disconnected ❌");
 	obs_frontend_push_ui_message(connected ? "Connected to Twitch EventSub!" : "WebSocket Disconnected!");
-
 }
