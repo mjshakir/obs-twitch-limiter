@@ -22,14 +22,14 @@ TwitchLimiter &TwitchLimiter::instance(void)
 }
 
 TwitchLimiter::TwitchLimiter(void)
-	: m_custom_bet_limit_enabled(true) m_max_bet_limit(5000UL),
+	: m_initialized(initialize()),
+	  m_custom_bet_limit_enabled(true),
+	  m_max_bet_limit(5000UL),
 	  m_bet_timeout_duration(30UL),
 	  m_websocket_url(std::string(DEFAULT_WEBSOCKET_URL)),
-	  m_initialized(initialize()),
 	  m_io_context(),
 	  m_reconnect_timer(m_io_context),
 	  m_overlay_source(nullptr, &obs_source_release)
-
 {
 	m_work_guard.emplace(m_io_context.get_executor());
 }
