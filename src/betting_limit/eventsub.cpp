@@ -46,7 +46,7 @@ EventSub::~EventSub(void)
 void EventSub::initialize(void)
 {
 	obs_log_info("EventSub connection initializing...");
-	std::thread([]() { m_io_context.run(); }).detach();
+	std::thread([this]() { m_io_context.run(); }).detach();
 
 	m_reconnect_timer.expires_after(std::chrono::seconds(10));
 	m_reconnect_timer.async_wait(&check_connection_status);
@@ -183,8 +183,8 @@ void EventSub::async_listenForBets(void)
 		return;
 	}
 
-	m_websocket.async_read(*m_buffer, [this](const boost::system::error_code &ec, size_t bytes_transferred) {
-		handle_read(ec, bytes_transferred, *m_buffer);
+	m_websocket.async_read(m_buffer, [this](const boost::system::error_code &ec, size_t bytes_transferred) {
+		handle_read(ec, bytes_transferred, m_buffer);
 	});
 }
 
@@ -241,7 +241,7 @@ void EventSub::check_connection_status(const boost::system::error_code &ec)
 		return;
 	}
 
-	if (!is_connected.load()) {
+	if (!m_connected.load()) {
 		obs_log_error("WebSocket Disconnected! Attempting reconnect...");
 		EventSub::async_connect();
 	}
