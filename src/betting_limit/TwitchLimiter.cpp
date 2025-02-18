@@ -40,7 +40,7 @@ TwitchLimiter::~TwitchLimiter(void)
 }
 
 // Example implementations of plugin methods:
-bool TwitchLimiter::initialize(void) const
+bool TwitchLimiter::initialize(void)
 {
 	blog(LOG_INFO, "Twitch Betting Limit Plugin Loaded.");
 	EventSub::instance().set_status_callback([this](bool connected) { update_websocket_status(connected); });
@@ -80,21 +80,40 @@ obs_properties_t *TwitchLimiter::get_settings(void *data) const
 	static_cast<void>(obs_properties_add_int(props.get(), "bet_timeout_duration", "Bet Timeout Duration (seconds)",
 						 5, 300, 5));
 
-	static_cast<void>(
-		obs_properties_add_button(props.get(), "reset_bet_limit", "Reset Bet Limit", reset_bet_limit));
-	static_cast<void>(
-		obs_properties_add_button(props.get(), "reset_bet_timeout", "Reset Bet Timeout", reset_bet_timeout));
-	static_cast<void>(obs_properties_add_button(props.get(), "reset_overlay", "Reset Overlay", reset_overlay));
+	static_cast<void>(obs_properties_add_button(props.get(), "reset_bet_limit", "Reset Bet Limit",
+						    [](obs_properties_t *, obs_property_t *, obs_data_t *) -> bool {
+							    return TwitchLimiter::instance().reset_bet_limit(
+								    nullptr, nullptr, nullptr);
+						    }););
+	static_cast<void>(obs_properties_add_button(props.get(), "reset_bet_timeout", "Reset Bet Timeout",
+						    [](obs_properties_t *, obs_property_t *, obs_data_t *) -> bool {
+							    return TwitchLimiter::instance().reset_bet_timeout(
+								    nullptr, nullptr, nullptr);
+						    }));
+
+	static_cast<void>(obs_properties_add_button(props.get(), "reset_overlay", "Reset Overlay",
+						    [](obs_properties_t *, obs_property_t *, void *) -> bool {
+							    return TwitchLimiter::instance().reset_overlay(
+								    nullptr, nullptr, nullptr);
+						    }));
 
 	obs_property_t *ws_url_prop =
 		obs_properties_add_text(props.get(), "websocket_url", "WebSocket URL", OBS_TEXT_DEFAULT);
-	obs_property_set_modified_callback(ws_url_prop, validate_websocket_url);
+	obs_property_set_modified_callback(ws_url_prop, [](obs_properties_t *, obs_property_t *, obs_data_t *) -> bool {
+		return TwitchLimiter::instance().validate_websocket_url(nullptr, nullptr, nullptr);
+	});
 
 	static_cast<void>(obs_properties_add_button(props.get(), "reset_websocket_url", "Reset WebSocket URL",
-						    reset_websocket_url));
+						    [](obs_properties_t *, obs_property_t *, obs_data_t *) -> bool {
+							    return TwitchLimiter::instance().reset_websocket_url(
+								    nullptr, nullptr, nullptr);
+						    }));
 
-	static_cast<void>(obs_properties_add_button(props.get(), "manual_reconnect_eventsub",
-						    "Reconnect to Twitch EventSub", manual_reconnect_eventsub));
+	static_cast<void>(obs_properties_add_button(
+		props.get(), "manual_reconnect_eventsub", "Reconnect to Twitch EventSub",
+		[](obs_properties_t *, obs_property_t *, obs_data_t *) -> bool {
+			return TwitchLimiter::instance().manual_reconnect_eventsub(nullptr, nullptr, nullptr);
+		}));
 
 	obs_property_t *ws_status =
 		obs_properties_add_text(props.get(), "ws_status", "WebSocket Status", OBS_TEXT_INFO);
