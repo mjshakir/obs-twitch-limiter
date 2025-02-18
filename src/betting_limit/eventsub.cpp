@@ -3,6 +3,7 @@
 #include <boost/asio.hpp>
 #include <boost/asio/ssl.hpp>
 #include <boost/asio/steady_timer.hpp>
+#include <boost/asio/ip/tcp.hpp>
 #include <boost/beast.hpp>
 #include <boost/beast/websocket.hpp>
 #include <rapidjson/document.h>
