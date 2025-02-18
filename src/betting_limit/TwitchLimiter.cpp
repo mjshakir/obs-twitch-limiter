@@ -43,13 +43,16 @@ TwitchLimiter::~TwitchLimiter(void)
 bool TwitchLimiter::initialize(void) const
 {
 	blog(LOG_INFO, "Twitch Betting Limit Plugin Loaded.");
-	EventSub::instance().set_status_callback(update_websocket_status);
-	EventSub::instance().set_overlay_callback(show_overlay_notification);
+	EventSub::instance().set_status_callback([this](bool connected) { update_websocket_status(connected); });
+
+	EventSub::instance().set_overlay_callback(
+		[this](std::string_view msg, size_t duration) { show_overlay_notification(msg, duration); });
+
 	EventSub::instance().initialize();
 	return true;
 }
 
-void TwitchLimiter::shutdown(void) const
+void TwitchLimiter::shutdown(void)
 {
 	hide_overlay_notification();
 	EventSub::instance().shutdown();
@@ -68,10 +71,10 @@ obs_properties_t *TwitchLimiter::get_settings(void *data) const
 
 	obs_property_t *limit_toggle =
 		obs_properties_add_bool(props.get(), "enable_custom_bet_limit", "Enable Custom Bet Limit");
-	obs_property_set_modified_callback(limit_toggle,
-					   [](obs_properties_t *, obs_property_t *, obs_data_t *) -> bool {
-						   return toggle_custom_bet_limit(nullptr, nullptr, nullptr);
-					   });
+	obs_property_set_modified_callback(
+		limit_toggle, [](obs_properties_t *, obs_property_t *, obs_data_t *) -> bool {
+			return TwitchLimiter::instance().toggle_custom_bet_limit(nullptr, nullptr, nullptr);
+		});
 
 	static_cast<void>(obs_properties_add_int(props.get(), "max_bet_limit", "Max Bet Limit", 100, 100000, 100));
 	static_cast<void>(obs_properties_add_int(props.get(), "bet_timeout_duration", "Bet Timeout Duration (seconds)",
@@ -119,7 +122,7 @@ void TwitchLimiter::update_settings(obs_data_t *settings)
 	blog(LOG_INFO, "Updated WebSocket URL: %s", m_websocket_url.c_str());
 	blog(LOG_INFO, "Updated Bet Limit: %s",
 	     m_custom_bet_limit_enabled.load() ? std::to_string(m_max_bet_limit.load()).c_str() : "Disabled");
-	blog(LOG_INFO, "Updated Bet Timeout Duration: %zu seconds", m_bet_timeout_duration);
+	blog(LOG_INFO, "Updated Bet Timeout Duration: %zu seconds", m_bet_timeout_duration.load());
 }
 
 // The remaining functions (toggle, reset, etc.) can be implemented similarly
@@ -191,6 +194,16 @@ bool TwitchLimiter::validate_websocket_url(obs_properties_t *props, obs_property
 	return true;
 }
 
+bool TwitchLimiter::reset_overlay(obs_properties_t *props, obs_property_t *prop, void *data)
+{
+	static_cast<void>(props);
+	static_cast<void>(prop);
+	static_cast<void>(data);
+	hide_overlay_notification();
+	blog(LOG_INFO, "Overlay manually reset by user.");
+	return true;
+}
+
 bool TwitchLimiter::valid_websocket_url(std::string_view url) const
 {
 	static const std::regex ws_regex(WS_URL_REGEX_PATTERN.data());
@@ -232,26 +245,26 @@ void TwitchLimiter::update_websocket_status(bool connected) const
 }
 
 // --- C Interface (forwarding functions) ---
-extern "C" {
+// extern "C" {
 
-bool obs_module_load(void)
-{
-	return TwitchLimiter::instance().initialized();
-}
+// bool obs_module_load(void)
+// {
+// 	return TwitchLimiter::instance().initialized();
+// }
 
-void obs_module_unload(void)
-{
-	TwitchLimiter::instance().shutdown();
-}
+// void obs_module_unload(void)
+// {
+// 	TwitchLimiter::instance().shutdown();
+// }
 
-obs_properties_t *obs_module_get_settings(void *data)
-{
-	return TwitchLimiter::instance().get_settings(data);
-}
+// obs_properties_t *obs_module_get_settings(void *data)
+// {
+// 	return TwitchLimiter::instance().get_settings(data);
+// }
 
-void obs_module_update_settings(obs_data_t *settings)
-{
-	TwitchLimiter::instance().update_settings(settings);
-}
+// void obs_module_update_settings(obs_data_t *settings)
+// {
+// 	TwitchLimiter::instance().update_settings(settings);
+// }
 
-} // extern "C"
+// } // extern "C"
