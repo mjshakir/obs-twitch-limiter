@@ -30,20 +30,12 @@ runs:
         sudo apt-get update
         sudo apt-get install -y libboost-all-dev rapidjson-dev
 
-        # Install WebSocketPP
-        git clone --depth 1 https://github.com/zaphoyd/websocketpp.git
-        cd websocketpp
-        mkdir build && cd build
-        cmake ..
-        make -j$(nproc)
-        sudo make install
-
     - name: Install Dependencies 🛍️ (macOS)
       if: runner.os == 'macOS'
       shell: zsh --no-rcs --errexit --pipefail {0}
       run: |
         brew update
-        brew install boost rapidjson websocketpp
+        brew install boost rapidjson
 
     - name: Install Dependencies 🛍️ (Windows)
       if: runner.os == 'Windows'
@@ -52,7 +44,7 @@ runs:
         choco install boost-msvc-14.3 -y
         git clone https://github.com/microsoft/vcpkg.git
         .\vcpkg\bootstrap-vcpkg.bat
-        .\vcpkg\vcpkg install rapidjson websocketpp
+        .\vcpkg\vcpkg install rapidjson
 
     - name: Run macOS Build
       if: runner.os == 'macOS'
