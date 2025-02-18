@@ -19,7 +19,7 @@ public:
 
 	// C++ methods that implement plugin functionality
 	bool initialize(void) const;
-	void shutdown(void) const;
+	void shutdown(void);
 	bool initialized(void) const;
 	obs_properties_t *get_settings(void *data) const;
 	void update_settings(obs_data_t *settings);
@@ -31,10 +31,10 @@ public:
 	bool manual_reconnect_eventsub(obs_properties_t *props, obs_property_t *prop, obs_data_t *settings);
 	bool reset_websocket_url(obs_properties_t *props, obs_property_t *prop, obs_data_t *settings);
 	bool validate_websocket_url(obs_properties_t *props, obs_property_t *prop, obs_data_t *settings);
+	bool reset_overlay(obs_properties_t *props, obs_property_t *prop, obs_data_t *settings);
 
 	void show_overlay_notification(std::string_view message, size_t duration);
 	void hide_overlay_notification(void);
-	bool reset_overlay(obs_properties_t *props, obs_property_t *prop, obs_data_t *settings);
 
 	bool valid_websocket_url(std::string_view url) const;
 	void update_websocket_status(bool connected) const;
@@ -60,16 +60,16 @@ private:
 	std::unique_ptr<obs_source_t, decltype(&obs_source_release)> m_overlay_source;
 };
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+// #ifdef __cplusplus
+// extern "C" {
+// #endif
 
-// OBS requires a C interface for the plugin entry points:
-bool obs_module_load(void);
-void obs_module_unload(void);
-obs_properties_t *obs_module_get_settings(void *data);
-void obs_module_update_settings(obs_data_t *settings);
+// // OBS requires a C interface for the plugin entry points:
+// bool obs_module_load(void);
+// void obs_module_unload(void);
+// obs_properties_t *obs_module_get_settings(void *data);
+// void obs_module_update_settings(obs_data_t *settings);
 
-#ifdef __cplusplus
-}
-#endif
+// #ifdef __cplusplus
+// }
+// #endif
