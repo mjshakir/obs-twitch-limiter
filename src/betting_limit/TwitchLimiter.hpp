@@ -18,7 +18,7 @@ public:
 	static TwitchLimiter &instance(void);
 
 	// C++ methods that implement plugin functionality
-	bool initialize(void) const;
+	bool initialize(void);
 	void shutdown(void);
 	bool initialized(void) const;
 	obs_properties_t *get_settings(void *data) const;
@@ -31,7 +31,7 @@ public:
 	bool manual_reconnect_eventsub(obs_properties_t *props, obs_property_t *prop, obs_data_t *settings);
 	bool reset_websocket_url(obs_properties_t *props, obs_property_t *prop, obs_data_t *settings);
 	bool validate_websocket_url(obs_properties_t *props, obs_property_t *prop, obs_data_t *settings);
-	bool reset_overlay(obs_properties_t *props, obs_property_t *prop, obs_data_t *settings);
+	bool reset_overlay(obs_properties_t *props, obs_property_t *prop, void *data);
 
 	void show_overlay_notification(std::string_view message, size_t duration);
 	void hide_overlay_notification(void);
