@@ -65,55 +65,52 @@ bool TwitchLimiter::initialized(void) const
 
 obs_properties_t *TwitchLimiter::get_settings(void *data) const
 {
-	static_cast<void>(data);
-	std::unique_ptr<obs_properties_t, decltype(&obs_properties_destroy)> props(obs_properties_create(),
-										   &obs_properties_destroy);
+	static_cast<void>(data) std::unique_ptr<obs_properties_t, decltype(&obs_properties_destroy)> props(
+		obs_properties_create(), &obs_properties_destroy);
 
 	obs_property_t *limit_toggle =
 		obs_properties_add_bool(props.get(), "enable_custom_bet_limit", "Enable Custom Bet Limit");
-	obs_property_set_modified_callback(
-		limit_toggle, [](obs_properties_t *, obs_property_t *, obs_data_t *) -> bool {
-			return TwitchLimiter::instance().toggle_custom_bet_limit(nullptr, nullptr, nullptr);
-		});
+	obs_property_set_modified_callback(limit_toggle,
+					   [](obs_properties_t *props, obs_property_t *prop, void *data) -> bool {
+						   return TwitchLimiter::instance().toggle_custom_bet_limit(
+							   props, prop, static_cast<obs_data_t *>(data));
+					   });
 
-	static_cast<void>(obs_properties_add_int(props.get(), "max_bet_limit", "Max Bet Limit", 100, 100000, 100));
-	static_cast<void>(obs_properties_add_int(props.get(), "bet_timeout_duration", "Bet Timeout Duration (seconds)",
-						 5, 300, 5));
+	obs_properties_add_int(props.get(), "max_bet_limit", "Max Bet Limit", 100, 100000, 100);
+	obs_properties_add_int(props.get(), "bet_timeout_duration", "Bet Timeout Duration (seconds)", 5, 300, 5);
 
-	static_cast<void>(obs_properties_add_button(props.get(), "reset_bet_limit", "Reset Bet Limit",
-						    [](obs_properties_t *, obs_property_t *, obs_data_t *) -> bool {
-							    return TwitchLimiter::instance().reset_bet_limit(
-								    nullptr, nullptr, nullptr);
-						    }););
-	static_cast<void>(obs_properties_add_button(props.get(), "reset_bet_timeout", "Reset Bet Timeout",
-						    [](obs_properties_t *, obs_property_t *, obs_data_t *) -> bool {
-							    return TwitchLimiter::instance().reset_bet_timeout(
-								    nullptr, nullptr, nullptr);
-						    }));
-
-	static_cast<void>(obs_properties_add_button(props.get(), "reset_overlay", "Reset Overlay",
-						    [](obs_properties_t *, obs_property_t *, void *) -> bool {
-							    return TwitchLimiter::instance().reset_overlay(
-								    nullptr, nullptr, nullptr);
-						    }));
+	obs_properties_add_button(props.get(), "reset_bet_limit", "Reset Bet Limit",
+				  [](obs_properties_t *props, obs_property_t *prop, void *data) -> bool {
+					  return TwitchLimiter::instance().reset_bet_limit(
+						  props, prop, static_cast<obs_data_t *>(data));
+				  });
+	obs_properties_add_button(props.get(), "reset_bet_timeout", "Reset Bet Timeout",
+				  [](obs_properties_t *props, obs_property_t *prop, void *data) -> bool {
+					  return TwitchLimiter::instance().reset_bet_timeout(
+						  props, prop, static_cast<obs_data_t *>(data));
+				  });
+	obs_properties_add_button(props.get(), "reset_overlay", "Reset Overlay",
+				  [](obs_properties_t *props, obs_property_t *prop, void *data) -> bool {
+					  return TwitchLimiter::instance().reset_overlay(props, prop, data);
+				  });
 
 	obs_property_t *ws_url_prop =
 		obs_properties_add_text(props.get(), "websocket_url", "WebSocket URL", OBS_TEXT_DEFAULT);
-	obs_property_set_modified_callback(ws_url_prop, [](obs_properties_t *, obs_property_t *, obs_data_t *) -> bool {
-		return TwitchLimiter::instance().validate_websocket_url(nullptr, nullptr, nullptr);
-	});
-
-	static_cast<void>(obs_properties_add_button(props.get(), "reset_websocket_url", "Reset WebSocket URL",
-						    [](obs_properties_t *, obs_property_t *, obs_data_t *) -> bool {
-							    return TwitchLimiter::instance().reset_websocket_url(
-								    nullptr, nullptr, nullptr);
-						    }));
-
-	static_cast<void>(obs_properties_add_button(
-		props.get(), "manual_reconnect_eventsub", "Reconnect to Twitch EventSub",
-		[](obs_properties_t *, obs_property_t *, obs_data_t *) -> bool {
-			return TwitchLimiter::instance().manual_reconnect_eventsub(nullptr, nullptr, nullptr);
-		}));
+	obs_property_set_modified_callback(ws_url_prop,
+					   [](obs_properties_t *props, obs_property_t *prop, void *data) -> bool {
+						   return TwitchLimiter::instance().validate_websocket_url(
+							   props, prop, static_cast<obs_data_t *>(data));
+					   });
+	obs_properties_add_button(props.get(), "reset_websocket_url", "Reset WebSocket URL",
+				  [](obs_properties_t *props, obs_property_t *prop, void *data) -> bool {
+					  return TwitchLimiter::instance().reset_websocket_url(
+						  props, prop, static_cast<obs_data_t *>(data));
+				  });
+	obs_properties_add_button(props.get(), "manual_reconnect_eventsub", "Reconnect to Twitch EventSub",
+				  [](obs_properties_t *props, obs_property_t *prop, void *data) -> bool {
+					  return TwitchLimiter::instance().manual_reconnect_eventsub(
+						  props, prop, static_cast<obs_data_t *>(data));
+				  });
 
 	obs_property_t *ws_status =
 		obs_properties_add_text(props.get(), "ws_status", "WebSocket Status", OBS_TEXT_INFO);
