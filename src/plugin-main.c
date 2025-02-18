@@ -43,7 +43,11 @@ void obs_module_unload(void) {}
 
 obs_properties_t *obs_module_get_settings(void *data)
 {
+	(void)data;
 	return NULL; // Will be handled in the C++ plugin
 }
 
-void obs_module_update_settings(obs_data_t *settings) {}
+void obs_module_update_settings(obs_data_t *settings)
+{
+	(void)settings;
+}
