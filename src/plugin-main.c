@@ -18,6 +18,7 @@ with this program. If not, see <https://www.gnu.org/licenses/>
 
 #include <obs-module.h>
 #include <plugin-support.h>
+#include "TwitchLimiter.hpp" // Include your C++ implementation
 
 #ifdef __cplusplus
 extern "C" {
@@ -35,23 +36,23 @@ void obs_module_update_settings(obs_data_t *settings);
 OBS_DECLARE_MODULE()
 OBS_MODULE_USE_DEFAULT_LOCALE("obs_twitch_plugin", "en-US")
 
-// Minimal forwarding implementations:
+// Corrected C Wrapper forwarding to C++ functions
 bool obs_module_load(void)
 {
-	return obs_module_load(); // Or, if implemented in C++, call the C++ implementation.
+	return TwitchLimiter::instance().initialized();
 }
 
 void obs_module_unload(void)
 {
-	obs_module_unload();
+	TwitchLimiter::instance().shutdown();
 }
 
 obs_properties_t *obs_module_get_settings(void *data)
 {
-	return obs_module_get_settings(data);
+	return TwitchLimiter::instance().get_settings(data);
 }
 
 void obs_module_update_settings(obs_data_t *settings)
 {
-	obs_module_update_settings(settings);
+	TwitchLimiter::instance().update_settings(settings);
 }
