@@ -1,5 +1,5 @@
-#include "plugin.hpp"
 #include <obs.h>
+#include "plugin.hpp"
 #include <obs-properties.h>
 #include <obs-module.h>
 #include <obs-frontend-api.h>

@@ -1,5 +1,5 @@
-#include "eventsub.hpp"
 #include <obs.h>
+#include "eventsub.hpp"
 #include <thread>
 #include <rapidjson/document.h>
 
@@ -251,5 +251,5 @@ void EventSub::check_connection_status(const boost::system::error_code &ec)
 	}
 
 	m_reconnect_timer.expires_after(std::chrono::seconds(10));
-	m_reconnect_timer.async_wait(&check_connection_status);
+	m_reconnect_timer.async_wait([this](const boost::system::error_code &ec) {check_connection_status(ec);});
 }
