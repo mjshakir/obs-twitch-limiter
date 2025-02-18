@@ -6,7 +6,7 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Add custom plugin source files
-target_sources(${CMAKE_PROJECT_NAME} PRIVATE plugin-main.c betting_limit/plugin.cpp betting_limit/eventsub.cpp)
+target_sources(${CMAKE_PROJECT_NAME} PRIVATE plugin-main.c betting_limit/TwitchLimiter.cpp betting_limit/eventsub.cpp)
 
 # Include your plugin directory
 target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/betting_limit)
@@ -45,7 +45,7 @@ endif()
 # Link dependencies to the plugin
 target_link_libraries(
   ${CMAKE_PROJECT_NAME}
-  PRIVATE OBS::libobs Boost::json Boost::system RapidJSON ${OBS_FRONTEND_API_LIBRARIES}
+  PRIVATE OBS::libobs Boost::json Boost::system ${OBS_FRONTEND_API_LIBRARIES}
 )
 
 # Add packaging for Windows .zip release if(WIN32) install( TARGETS
