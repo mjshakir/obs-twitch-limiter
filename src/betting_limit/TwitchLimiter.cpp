@@ -65,8 +65,9 @@ bool TwitchLimiter::initialized(void) const
 
 obs_properties_t *TwitchLimiter::get_settings(void *data) const
 {
-	static_cast<void>(data) std::unique_ptr<obs_properties_t, decltype(&obs_properties_destroy)> props(
-		obs_properties_create(), &obs_properties_destroy);
+	static_cast<void>(data);
+	std::unique_ptr<obs_properties_t, decltype(&obs_properties_destroy)> props(obs_properties_create(),
+										   &obs_properties_destroy);
 
 	obs_property_t *limit_toggle =
 		obs_properties_add_bool(props.get(), "enable_custom_bet_limit", "Enable Custom Bet Limit");
