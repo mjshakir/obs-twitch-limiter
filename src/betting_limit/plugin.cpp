@@ -138,6 +138,9 @@ bool reset_bet_limit(obs_properties_t *props, obs_property_t *prop, void *data)
 // Reset only Bet Timeout
 bool reset_bet_timeout(obs_properties_t *props, obs_property_t *prop, void *data)
 {
+	static_cast<void>(props);
+	static_cast<void>(prop);
+	static_cast<void>(data);
 	std::unique_ptr<obs_data_t, decltype(&obs_data_release)> settings(obs_data_create(), &obs_data_release);
 	obs_data_set_int(settings.get(), "bet_timeout_duration", DEFAULT_BET_TIMEOUT);
 
