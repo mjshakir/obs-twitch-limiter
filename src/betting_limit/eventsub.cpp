@@ -2,6 +2,7 @@
 #include <thread>
 #include <rapidjson/document.h>
 #include <obs-module.h>
+#include <obs.h>
 //--------------------------------------------------------------
 // Definition
 //--------------------------------------------------------------
@@ -45,7 +46,7 @@ EventSub::~EventSub(void)
 // **🔹 Initialize WebSocket Connection**
 void EventSub::initialize(void)
 {
-	obs_log_info("EventSub connection initializing...");
+	blog(LOG_INFO, "EventSub connection initializing...");
 	std::thread([this]() { m_io_context.run(); }).detach();
 
 	m_reconnect_timer.expires_after(std::chrono::seconds(10));
@@ -53,13 +54,13 @@ void EventSub::initialize(void)
 		[this](const boost::system::error_code &ec) { this->check_connection_status(ec); });
 
 	async_connect();
-	obs_log_info("EventSub connection initialized.");
+	blog(LOG_INFO, "EventSub connection initialized.");
 }
 
 // **🔹 Shutdown WebSocket Connection**
 void EventSub::shutdown(void)
 {
-	obs_log_info("EventSub connection closed.");
+	blog(LOG_INFO, "EventSub connection closed.");
 	if (m_connected.load()) {
 		m_websocket.close(boost::beast::websocket::close_code::normal);
 		notify_status(false);
@@ -70,14 +71,14 @@ void EventSub::shutdown(void)
 void EventSub::set_max_bet_limit(const size_t &limit)
 {
 	m_max_bet_limit.store(limit);
-	obs_log_info("New Bet Timeout Duration: %zu seconds", limit);
+	blog(LOG_INFO, "New Bet Timeout Duration: %zu seconds", limit);
 }
 
 // **🔹 Set Bet Timeout Duration**
 void EventSub::set_bet_timeout_duration(const size_t &duration)
 {
 	m_bet_timeout_duration.store(duration);
-	obs_log_info("New Bet Timeout Duration: %zu seconds", duration);
+	blog(LOG_INFO, "New Bet Timeout Duration: %zu seconds", duration);
 }
 
 // **🔹 Set OBS Callbacks**
@@ -112,15 +113,15 @@ void EventSub::notify_overlay(std::string_view message, size_t duration)
 void EventSub::async_connect(void)
 {
 	if (m_reconnect_attempts.load() >= MAX_RECONNECT_DELAY) {
-		obs_log_error("Max reconnect time (24 hours) reached. Manual reconnect required.");
+		blog(LOG_ERROR, "Max reconnect time (24 hours) reached. Manual reconnect required.");
 		return;
 	}
 
 	size_t delay = std::min<size_t>(5 * (1 << m_reconnect_attempts.load()),
 					MAX_RECONNECT_DELAY); // Exponential backoff (5s * 2^n)
 
-	obs_log_info("Attempting WebSocket reconnect (Attempt %zu), waiting %zu seconds",
-		     m_reconnect_attempts.load() + 1, delay);
+	blog(LOG_INFO, "Attempting WebSocket reconnect (Attempt %zu), waiting %zu seconds",
+	     m_reconnect_attempts.load() + 1, delay);
 
 	m_reconnect_attempts++;
 
@@ -138,8 +139,8 @@ void EventSub::async_connect(void)
 									 handle_connect(ec);
 								 });
 						 } else {
-							 obs_log_error("Failed to resolve Twitch EventSub host: %s",
-								       ec.message().c_str());
+							 blog(LOG_ERROR, "Failed to resolve Twitch EventSub host: %s",
+							      ec.message().c_str());
 							 async_connect(); // Retry on failure
 						 }
 					 });
@@ -150,7 +151,7 @@ void EventSub::async_connect(void)
 void EventSub::handle_resolve(const boost::system::error_code &ec, boost::asio::ip::tcp::resolver::results_type results)
 {
 	if (ec) {
-		obs_log_error("Failed to resolve Twitch EventSub host: %s", ec.message().c_str());
+		blog(LOG_ERROR, "Failed to resolve Twitch EventSub host: %s", ec.message().c_str());
 		return;
 	}
 	m_websocket.next_layer().async_connect(*results.begin(),
@@ -161,18 +162,18 @@ void EventSub::handle_resolve(const boost::system::error_code &ec, boost::asio::
 void EventSub::handle_connect(const boost::system::error_code &ec)
 {
 	if (ec) {
-		obs_log_error("WebSocket Connection Failed: %s", ec.message().c_str());
+		blog(LOG_ERROR, "WebSocket Connection Failed: %s", ec.message().c_str());
 		std::this_thread::sleep_for(std::chrono::seconds(5));
 		async_connect();
 		return;
 	}
 	m_websocket.async_handshake(EVENTSUB_HOST.data(), "/ws", [this](const boost::system::error_code &ec) {
 		if (ec) {
-			obs_log_error("WebSocket Handshake Failed: %s", ec.message().c_str());
+			blog(LOG_ERROR, "WebSocket Handshake Failed: %s", ec.message().c_str());
 			return;
 		}
 
-		obs_log_info("Connected to Twitch EventSub!");
+		blog(LOG_INFO, "Connected to Twitch EventSub!");
 		m_reconnect_attempts.store(0UL); // Reset the counter
 		notify_status(true);
 		async_listenForBets();
@@ -196,7 +197,7 @@ void EventSub::handle_read(const boost::system::error_code &ec, const size_t &by
 			   boost::beast::flat_buffer &buffer)
 {
 	if (ec) {
-		obs_log_error("WebSocket Read Error: %s", ec.message().c_str());
+		blog(LOG_ERROR, "WebSocket Read Error: %s", ec.message().c_str());
 		notify_status(false);
 		async_connect(); // Attempt to reconnect on failure
 		return;
@@ -207,13 +208,13 @@ void EventSub::handle_read(const boost::system::error_code &ec, const size_t &by
 
 	rapidjson::Document jsonResponse;
 	if (jsonResponse.Parse(response.data()).HasParseError()) {
-		obs_log_error("Failed to parse Twitch EventSub response");
+		blog(LOG_ERROR, "Failed to parse Twitch EventSub response");
 		async_listenForBets(); // Keep listening even if parsing fails
 		return;
 	}
 
 	if (!jsonResponse.HasMember("type") || !jsonResponse["type"].IsString()) {
-		obs_log_error("Invalid response: Missing type field");
+		blog(LOG_ERROR, "Invalid response: Missing type field");
 		async_listenForBets(); // Continue listening
 		return;
 	}
@@ -231,7 +232,7 @@ void EventSub::handle_read(const boost::system::error_code &ec, const size_t &by
 					       m_bet_timeout_duration.load());
 			}
 		} else {
-			obs_log_error("Invalid bet event structure");
+			blog(LOG_ERROR, "Invalid bet event structure");
 		}
 	}
 
@@ -245,7 +246,7 @@ void EventSub::check_connection_status(const boost::system::error_code &ec)
 	}
 
 	if (!m_connected.load()) {
-		obs_log_error("WebSocket Disconnected! Attempting reconnect...");
+		blog(LOG_ERROR, "WebSocket Disconnected! Attempting reconnect...");
 		EventSub::async_connect();
 	}
 

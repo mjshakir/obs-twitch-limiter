@@ -1,7 +1,4 @@
 #include "plugin.hpp"
-#include <obs-properties.h>
-#include <obs-module.h>
-#include <obs-frontend-api.h>
 #include "eventsub.hpp"
 #include <memory>
 #include <thread>
@@ -10,6 +7,10 @@
 #include <string>
 #include <boost/asio.hpp>
 #include <boost/asio/steady_timer.hpp>
+#include <obs.h>
+#include <obs-properties.h>
+#include <obs-module.h>
+#include <obs-frontend-api.h>
 
 // Default values
 static constexpr size_t DEFAULT_MAX_BET_LIMIT = 5000UL;
@@ -60,14 +61,14 @@ bool reset_overlay(obs_properties_t *props, obs_property_t *prop, void *data)
 	static_cast<void>(prop);
 	static_cast<void>(data);
 	hide_overlay_notification();
-	obs_log_info("Overlay manually reset by user.");
+	blog(LOG_INFO, "Overlay manually reset by user.");
 	return true;
 }
 
 // OBS Plugin Load
 bool obs_module_load(void)
 {
-	obs_log_info("Twitch Betting Limit Plugin Loaded.");
+	blog(LOG_INFO, "Twitch Betting Limit Plugin Loaded.");
 	EventSub::instance().set_status_callback(update_websocket_status);
 	EventSub::instance().set_overlay_callback(show_overlay_notification);
 	EventSub::instance().initialize();
@@ -133,7 +134,7 @@ bool reset_bet_limit(obs_properties_t *props, obs_property_t *prop, void *data)
 
 	obs_module_update_settings(settings.get());
 
-	obs_log_info("Reset Bet Limit to default: %d", DEFAULT_MAX_BET_LIMIT);
+	blog(LOG_INFO, "Reset Bet Limit to default: %d", DEFAULT_MAX_BET_LIMIT);
 	return true;
 }
 
@@ -148,7 +149,7 @@ bool reset_bet_timeout(obs_properties_t *props, obs_property_t *prop, void *data
 
 	obs_module_update_settings(settings.get());
 
-	obs_log_info("Reset Bet Timeout to default: %d seconds", DEFAULT_BET_TIMEOUT);
+	blog(LOG_INFO, "Reset Bet Timeout to default: %d seconds", DEFAULT_BET_TIMEOUT);
 	return true;
 }
 
@@ -157,7 +158,7 @@ bool manual_reconnect_eventsub(obs_properties_t *props, obs_property_t *prop, vo
 	static_cast<void>(props);
 	static_cast<void>(prop);
 	static_cast<void>(data);
-	obs_log_info("Manually reconnecting to Twitch EventSub...");
+	blog(LOG_INFO, "Manually reconnecting to Twitch EventSub...");
 	EventSub::instance().shutdown();
 	EventSub::instance().initialize();
 	return true;
@@ -171,7 +172,7 @@ bool reset_websocket_url(obs_properties_t *props, obs_property_t *prop, void *da
 	static_cast<void>(data);
 
 	websocket_url = std::string(DEFAULT_WEBSOCKET_URL);
-	obs_log_info("WebSocket URL reset to default: %s", websocket_url.c_str());
+	blog(LOG_INFO, "WebSocket URL reset to default: %s", websocket_url.c_str());
 	return true;
 }
 
@@ -185,9 +186,9 @@ bool validate_websocket_url(obs_properties_t *props, obs_property_t *prop, obs_d
 	if (new_url && *new_url) {
 		if (valid_websocket_url(new_url)) {
 			websocket_url = std::string(new_url);
-			obs_log_info("WebSocket URL updated: %s", websocket_url.c_str());
+			blog(LOG_INFO, "WebSocket URL updated: %s", websocket_url.c_str());
 		} else {
-			obs_log_info("Invalid WebSocket URL entered: %s", new_url);
+			blog(LOG_INFO, "Invalid WebSocket URL entered: %s", new_url);
 			obs_data_set_string(settings, "websocket_url",
 					    websocket_url.c_str()); // Reset to previous valid URL
 		}
@@ -213,10 +214,10 @@ void obs_module_update_settings(obs_data_t *settings)
 	EventSub::instance().set_max_bet_limit(custom_bet_limit_enabled ? max_bet_limit : SIZE_MAX);
 	EventSub::instance().set_bet_timeout_duration(bet_timeout_duration);
 
-	obs_log_info("Updated WebSocket URL: %s", websocket_url.c_str());
-	obs_log_info("Updated Bet Limit: %s",
-		     custom_bet_limit_enabled ? std::to_string(max_bet_limit).c_str() : "Disabled");
-	obs_log_info("Updated Bet Timeout Duration: %zu seconds", bet_timeout_duration);
+	blog(LOG_INFO, "Updated WebSocket URL: %s", websocket_url.c_str());
+	blog(LOG_INFO, "Updated Bet Limit: %s",
+	     custom_bet_limit_enabled ? std::to_string(max_bet_limit).c_str() : "Disabled");
+	blog(LOG_INFO, "Updated Bet Timeout Duration: %zu seconds", bet_timeout_duration);
 }
 
 // Callback when user toggles the custom bet limit
@@ -226,7 +227,7 @@ bool toggle_custom_bet_limit(obs_properties_t *props, obs_property_t *prop, void
 	static_cast<void>(prop);
 	static_cast<void>(data);
 	custom_bet_limit_enabled = !custom_bet_limit_enabled;
-	obs_log_info("Custom Bet Limit %s", custom_bet_limit_enabled ? "Enabled" : "Disabled");
+	blog(LOG_INFO, "Custom Bet Limit %s", custom_bet_limit_enabled ? "Enabled" : "Disabled");
 	return true;
 }
 
@@ -242,9 +243,9 @@ void update_websocket_status(bool connected)
 	obs_data_set_string(settings, "ws_status", connected ? "Connected ✅" : "Disconnected ❌");
 
 	// OBS Logging (for debugging and logs)
-	obs_log_info("WebSocket Status: %s", connected ? "Connected to Twitch EventSub!" : "WebSocket Disconnected!");
+	blog(LOG_INFO, "WebSocket Status: %s", connected ? "Connected to Twitch EventSub!" : "WebSocket Disconnected!");
 
 	// Display a message in OBS UI (using OBS_FRONTEND_INFO)
-	obs_frontend_push_ui_translation(OBS_FRONTEND_INFO,
-					 connected ? "Connected to Twitch EventSub!" : "WebSocket Disconnected!");
+	obs_frontend_push_ui_translation(OBS_TEXT_INFO,
+					 connected ? "Connected to Twitch EventSub!" : "EventSub Disconnected!");
 }
