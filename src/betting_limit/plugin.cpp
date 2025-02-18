@@ -1,4 +1,3 @@
-#include <obs.h>
 #include "plugin.hpp"
 #include <obs-properties.h>
 #include <obs-module.h>
@@ -126,6 +125,9 @@ obs_properties_t *obs_module_get_settings(void *data)
 // Reset only Bet Limit
 bool reset_bet_limit(obs_properties_t *props, obs_property_t *prop, void *data)
 {
+	static_cast<void>(props);
+	static_cast<void>(prop);
+	static_cast<void>(data);
 	std::unique_ptr<obs_data_t, decltype(&obs_data_release)> settings(obs_data_create(), &obs_data_release);
 	obs_data_set_int(settings.get(), "max_bet_limit", DEFAULT_MAX_BET_LIMIT);
 
@@ -238,5 +240,11 @@ void update_websocket_status(bool connected)
 {
 	obs_data_t *settings = obs_data_create();
 	obs_data_set_string(settings, "ws_status", connected ? "Connected ✅" : "Disconnected ❌");
-	obs_frontend_push_ui_message(connected ? "Connected to Twitch EventSub!" : "WebSocket Disconnected!");
+
+	// OBS Logging (for debugging and logs)
+	obs_log_info("WebSocket Status: %s", connected ? "Connected to Twitch EventSub!" : "WebSocket Disconnected!");
+
+	// Display a message in OBS UI (using OBS_FRONTEND_INFO)
+	obs_frontend_push_ui_translation(OBS_FRONTEND_INFO,
+					 connected ? "Connected to Twitch EventSub!" : "WebSocket Disconnected!");
 }
