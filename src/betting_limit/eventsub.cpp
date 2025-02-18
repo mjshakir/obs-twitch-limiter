@@ -1,11 +1,5 @@
 #include "eventsub.hpp"
 #include <thread>
-#include <boost/asio.hpp>
-#include <boost/asio/ssl.hpp>
-#include <boost/asio/steady_timer.hpp>
-#include <boost/asio/ip/tcp.hpp>
-#include <boost/beast.hpp>
-#include <boost/beast/websocket.hpp>
 #include <rapidjson/document.h>
 #include <obs.h>
 //--------------------------------------------------------------
@@ -33,13 +27,13 @@ EventSub::EventSub(void)
 	  m_bet_timeout_duration(30UL),
 	  m_reconnect_attempts(0UL),
 	  m_websocket_url(std::string(EVENTSUB_WEBSOCKET_URL)),
-	  m_io_context(std::make_unique<boost::asio::io_context>()),
-	  m_resolver(std::make_unique<boost::asio::ip::tcp::resolver>(*m_io_context)),
-	  m_websocket(std::make_unique<boost::beast::websocket::stream<boost::asio::ip::tcp::socket>>(*m_io_context)),
-	  m_reconnect_timer(std::make_unique<boost::asio::steady_timer>(*m_io_context)),
-	  m_buffer(std::make_unique<boost::beast::flat_buffer>())
+	  m_io_context(),
+	  m_resolver(m_io_context),
+	  m_websocket(m_io_context),
+	  m_reconnect_timer(m_io_context),
+	  m_buffer()
 {
-	m_work_guard.emplace(m_io_context->get_executor());
+	m_work_guard.emplace(m_io_context.get_executor());
 }
 
 EventSub::~EventSub(void)
@@ -52,10 +46,10 @@ EventSub::~EventSub(void)
 void EventSub::initialize(void)
 {
 	obs_log_info("EventSub connection initializing...");
-	std::thread([]() { m_io_context->run(); }).detach();
+	std::thread([]() { m_io_context.run(); }).detach();
 
-	m_reconnect_timer->expires_after(std::chrono::seconds(10));
-	m_reconnect_timer->async_wait(&check_connection_status);
+	m_reconnect_timer.expires_after(std::chrono::seconds(10));
+	m_reconnect_timer.async_wait(&check_connection_status);
 
 	async_connect();
 	obs_log_info("EventSub connection initialized.");
@@ -66,7 +60,7 @@ void EventSub::shutdown(void)
 {
 	obs_log_info("EventSub connection closed.");
 	if (m_connected.load()) {
-		m_websocket->close(boost::beast::websocket::close_code::normal);
+		m_websocket.close(boost::beast::websocket::close_code::normal);
 		notify_status(false);
 	}
 }
@@ -130,14 +124,14 @@ void EventSub::async_connect(void)
 	m_reconnect_attempts++;
 
 	// Uses `m_reconnect_timer` to delay the connection attempt
-	m_reconnect_timer->expires_after(std::chrono::seconds(delay));
-	m_reconnect_timer->async_wait([this](const boost::system::error_code &) {
+	m_reconnect_timer.expires_after(std::chrono::seconds(delay));
+	m_reconnect_timer.async_wait([this](const boost::system::error_code &) {
 		// Uses `m_resolver` to resolve Twitch's EventSub WebSocket server
 		m_resolver.async_resolve(
 			EVENTSUB_HOST.data(), EVENTSUB_PORT.data(),
 			[this](const boost::system::error_code &ec, tcp::resolver::results_type results) {
 				if (!ec) {
-					m_websocket->next_layer().async_connect(
+					m_websocket.next_layer().async_connect(
 						*results.begin(),
 						[this](const boost::system::error_code &ec) { handle_connect(ec); });
 				} else {
@@ -156,8 +150,8 @@ void EventSub::handle_resolve(const boost::system::error_code &ec, boost::asio::
 		obs_log_error("Failed to resolve Twitch EventSub host: %s", ec.message().c_str());
 		return;
 	}
-	m_websocket->next_layer().async_connect(*results.begin(),
-						[this](const boost::system::error_code &ec) { handle_connect(ec); });
+	m_websocket.next_layer().async_connect(*results.begin(),
+					       [this](const boost::system::error_code &ec) { handle_connect(ec); });
 }
 
 // **🔹 Async WebSocket Connection Handler**
@@ -169,7 +163,7 @@ void EventSub::handle_connect(const boost::system::error_code &ec)
 		async_connect();
 		return;
 	}
-	m_websocket->async_handshake(EVENTSUB_HOST.data(), "/ws", [this](const boost::system::error_code &ec) {
+	m_websocket.async_handshake(EVENTSUB_HOST.data(), "/ws", [this](const boost::system::error_code &ec) {
 		if (ec) {
 			obs_log_error("WebSocket Handshake Failed: %s", ec.message().c_str());
 			return;
@@ -185,11 +179,11 @@ void EventSub::handle_connect(const boost::system::error_code &ec)
 // **🔹 Async WebSocket Listener**
 void EventSub::async_listenForBets(void)
 {
-	if (!m_websocket->is_open()) {
+	if (!m_websocket.is_open()) {
 		return;
 	}
 
-	m_websocket->async_read(*m_buffer, [this](const boost::system::error_code &ec, size_t bytes_transferred) {
+	m_websocket.async_read(*m_buffer, [this](const boost::system::error_code &ec, size_t bytes_transferred) {
 		handle_read(ec, bytes_transferred, *m_buffer);
 	});
 }
@@ -252,6 +246,6 @@ void EventSub::check_connection_status(const boost::system::error_code &ec)
 		EventSub::async_connect();
 	}
 
-	m_reconnect_timer->expires_after(std::chrono::seconds(10));
-	m_reconnect_timer->async_wait(&check_connection_status);
+	m_reconnect_timer.expires_after(std::chrono::seconds(10));
+	m_reconnect_timer.async_wait(&check_connection_status);
 }
