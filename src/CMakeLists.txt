@@ -18,25 +18,25 @@ find_package(Boost REQUIRED json system)
 # Find RapidJSON
 find_package(RapidJSON REQUIRED)
 
+# Find OBS libobs
+find_package(libobs REQUIRED)
+
 # Include directories
 if(Boost_FOUND)
   include_directories(${Boost_INCLUDE_DIRS})
   link_directories(${Boost_LIBRARY_DIRS})
 endif()
 
-if(websocketpp_FOUND)
-  include_directories(${websocketpp_INCLUDE_DIRS})
-endif()
-
 if(RapidJSON_FOUND)
   include_directories(${RapidJSON_INCLUDE_DIRS})
 endif()
 
+if(libobs_FOUND)
+  include_directories(${libobs_INCLUDE_DIRS})
+endif()
+
 # Link dependencies to the plugin
-target_link_libraries(
-  ${CMAKE_PROJECT_NAME}
-  PRIVATE OBS::libobs Boost::json Boost::system websocketpp RapidJSON
-)
+target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE OBS::libobs Boost::json Boost::system RapidJSON)
 
 # Add packaging for Windows .zip release if(WIN32) install( TARGETS
 # ${CMAKE_PROJECT_NAME} RUNTIME DESTINATION "obs-plugins/64bit" LIBRARY
