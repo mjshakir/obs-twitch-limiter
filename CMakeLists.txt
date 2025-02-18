@@ -18,6 +18,8 @@ target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE OBS::libobs)
 
 # Include betting_limit
 add_subdirectory(src)
+# Ensure `TwitchLimiter.cpp` is compiled as C++
+set_source_files_properties(src/betting_limit/TwitchLimiter.cpp PROPERTIES LANGUAGE CXX)
 
 if(ENABLE_FRONTEND_API)
   find_package(obs-frontend-api REQUIRED)
