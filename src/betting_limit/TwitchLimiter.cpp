@@ -1,4 +1,4 @@
-#include "plugin.hpp"
+#include "TwitchLimiter.hpp"
 #include "eventsub.hpp" // Your C++ EventSub class, also implemented in C++
 #include <obs.h>
 #include <obs-module.h>
