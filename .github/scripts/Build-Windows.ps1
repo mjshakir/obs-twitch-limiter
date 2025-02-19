@@ -1,34 +1,26 @@
 [CmdletBinding()]
 param(
     [ValidateSet('x64')]
-    [string] $Target = 'x64',
+    [string]$Target = 'x64',
     [ValidateSet('Debug', 'RelWithDebInfo', 'Release', 'MinSizeRel')]
-    [string] $Configuration = 'RelWithDebInfo'
+    [string]$Configuration = 'RelWithDebInfo'
 )
 
 $ErrorActionPreference = 'Stop'
 
-# Set the vcpkg root (assumes vcpkg was cloned in the repository root)
-$env:VCPKG_ROOT = (Resolve-Path ".\vcpkg").Path
-
-# Define the full path to the vcpkg toolchain file
+# VCPKG_ROOT should have been set by the install step; compute the toolchain file path:
 $toolchainFile = Join-Path $env:VCPKG_ROOT 'scripts\buildsystems\vcpkg.cmake'
-
-if ($DebugPreference -eq 'Continue') {
-    $VerbosePreference = 'Continue'
-    $InformationPreference = 'Continue'
-}
 
 if ($env:CI -eq $null) {
     throw "Build-Windows.ps1 requires CI environment"
 }
 
-if (-not [System.Environment]::Is64BitOperatingSystem) {
+if (!( [System.Environment]::Is64BitOperatingSystem )) {
     throw "A 64-bit system is required to build the project."
 }
 
-if ($PSVersionTable.PSVersion -lt '7.2.0') {
-    Write-Warning 'This build script requires PowerShell Core 7 or later. Please upgrade your PowerShell.'
+if ($PSVersionTable.PSVersion -lt [version]"7.2.0") {
+    Write-Warning 'The build script requires PowerShell Core 7 or higher. Please upgrade: https://aka.ms/pscore6'
     exit 2
 }
 
@@ -40,56 +32,42 @@ function Build {
     }
 
     $ScriptHome = $PSScriptRoot
-    $ProjectRoot = Resolve-Path -Path "$PSScriptRoot/../.."
-
-    # Load any helper functions (if provided)
-    $UtilityFunctions = Get-ChildItem -Path $PSScriptRoot\utils.pwsh\*.ps1 -Recurse
-    foreach ($Utility in $UtilityFunctions) {
-        Write-Debug "Loading $($Utility.FullName)"
-        . $Utility.FullName
-    }
+    $ProjectRoot = Resolve-Path "$ScriptHome/../.."
 
     Push-Location -Stack BuildTemp
-    Set-Location $ProjectRoot
+    Ensure-Location $ProjectRoot
 
+    # Configure using the preset and the toolchain file. Notice we do not pass any architecture flags.
     $CmakeArgs = @(
         '--preset', "windows-ci-${Target}",
-        "-DCMAKE_TOOLCHAIN_FILE=${toolchainFile}",
-        "-Dlibobs_DIR=${env:libobs_DIR}"
+        "-DCMAKE_TOOLCHAIN_FILE=$toolchainFile",
+        "-Dlibobs_DIR=$env:libobs_DIR"
     )
 
-    $CmakeBuildArgs = @('--build')
-    $CmakeInstallArgs = @()
-
-    if ($DebugPreference -eq 'Continue') {
-        $CmakeArgs += '--debug-output'
-        $CmakeBuildArgs += '--verbose'
-        $CmakeInstallArgs += '--verbose'
-    }
-
-    $CmakeBuildArgs += @(
-        '--preset', "windows-${Target}",
+    $CmakeBuildArgs = @(
+        '--build', '--preset', "windows-${Target}",
         '--config', $Configuration,
         '--parallel',
         '--', '/consoleLoggerParameters:Summary', '/noLogo'
     )
 
-    $CmakeInstallArgs += @(
+    $CmakeInstallArgs = @(
         '--install', "build_${Target}",
-        '--prefix', "${ProjectRoot}\release\$Configuration",
+        '--prefix', "$ProjectRoot/release/$Configuration",
         '--config', $Configuration
     )
 
-    Write-Host "Configuring project with arguments: $CmakeArgs"
+    Log-Group "Configuring OBS Plugin..."
     Invoke-External cmake @CmakeArgs
 
-    Write-Host "Building project with arguments: $CmakeBuildArgs"
+    Log-Group "Building OBS Plugin..."
     Invoke-External cmake @CmakeBuildArgs
 
-    Write-Host "Installing project with arguments: $CmakeInstallArgs"
+    Log-Group "Installing OBS Plugin..."
     Invoke-External cmake @CmakeInstallArgs
 
     Pop-Location -Stack BuildTemp
+    Log-Group
 }
 
 Build

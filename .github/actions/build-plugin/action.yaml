@@ -47,6 +47,7 @@ runs:
         .\vcpkg\bootstrap-vcpkg.bat
         .\vcpkg\vcpkg install boost-system boost-json rapidjson
         .\vcpkg\vcpkg integrate install
+        $env:VCPKG_ROOT = (Resolve-Path ".\vcpkg").Path
 
     - name: Build libobs from source (Windows)
       if: runner.os == 'Windows'
@@ -55,10 +56,13 @@ runs:
         git clone --recursive https://github.com/obsproject/obs-studio.git
         cd obs-studio
         mkdir build && cd build
-        # Configure with MSVC (Visual Studio 17 2022) and Ninja ensure you have a recent Windows SDK installed.
-        cmake .. -G Ninja -DCMAKE_BUILD_TYPE=Release -DBUILD_BROWSER=OFF -DBUILD_OBSCONTROL=OFF -DCMAKE_SYSTEM_VERSION=10.0.20348.0 -DCMAKE_INSTALL_PREFIX="$env:AGENT_WORKFOLDER\libobs" -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_ROOT\scripts\buildsystems\vcpkg.cmake"
+
+        # Configure obs-studio (do not pass -A or -DCMAKE_SYSTEM_VERSION; let the toolchain file and VS choose the platform)
+        cmake .. -G Ninja -DCMAKE_BUILD_TYPE=Release -DBUILD_BROWSER=OFF -DBUILD_OBSCONTROL=OFF -DCMAKE_INSTALL_PREFIX="$env:AGENT_WORKFOLDER\libobs" -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_ROOT\scripts\buildsystems\vcpkg.cmake"
+
         ninja install
-        # Set the libobs_DIR variable so your plugin can find libobs
+
+        # Set the libobs_DIR variable so our plugin can find libobs
         $env:libobs_DIR = "$env:AGENT_WORKFOLDER\libobs\lib\cmake\libobs"
 
     - name: Run macOS Build
