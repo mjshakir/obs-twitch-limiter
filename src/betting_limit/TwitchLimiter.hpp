@@ -59,30 +59,3 @@ private:
 	std::optional<boost::asio::executor_work_guard<boost::asio::io_context::executor_type>> m_work_guard;
 	std::unique_ptr<obs_source_t, decltype(&obs_source_release)> m_overlay_source;
 };
-
-// #ifdef __cplusplus
-// extern "C" {
-// #endif
-
-// // OBS requires a C interface for the plugin entry points:
-// bool obs_module_load(void);
-// void obs_module_unload(void);
-// obs_properties_t *obs_module_get_settings(void *data);
-// void obs_module_update_settings(obs_data_t *settings);
-
-// #ifdef __cplusplus
-// }
-// #endif
-
-// #ifdef __cplusplus
-// extern "C" {
-// #endif
-
-// bool TwitchLimiter_load(void);
-// void TwitchLimiter_unload(void);
-// obs_properties_t *TwitchLimiter_get_settings(void *data);
-// void TwitchLimiter_update_settings(obs_data_t *settings);
-
-// #ifdef __cplusplus
-// }
-// #endif
