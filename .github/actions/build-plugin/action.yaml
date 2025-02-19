@@ -42,6 +42,7 @@ runs:
       shell: pwsh
       run: |
         # choco install boost-msvc-14.3 -y
+        choco install ninja -y
         git clone https://github.com/microsoft/vcpkg.git
         .\vcpkg\bootstrap-vcpkg.bat
         .\vcpkg\vcpkg install boost-system boost-json rapidjson
