@@ -62,6 +62,7 @@ function Build {
     $CmakeArgs = @(
         '--preset', "windows-ci-${Target}",
         "-DCMAKE_TOOLCHAIN_FILE=${toolchainFile}"
+        "-Dlibobs_DIR=${env:OBS_DEPS_DIR}\lib\cmake\libobs"
     )
 
     $CmakeBuildArgs = @('--build')
