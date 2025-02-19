@@ -148,15 +148,15 @@ void EventSub::async_connect(void)
 }
 
 // **🔹 Async Resolve Handler**
-void EventSub::handle_resolve(const boost::system::error_code &ec,
-			      boost::asio::ip::tcp::resolver::results_type results)
+void EventSub::handle_resolve(const boost::system::error_code &ec, boost::asio::ip::tcp::resolver::results_type results)
 {
 	if (ec) {
 		blog(LOG_ERROR, "Failed to resolve Twitch EventSub host: %s", ec.message().c_str());
 		return;
 	}
-	m_websocket.next_layer().async_connect(*results.begin(),
-					       [this](const boost::system::error_code &ec) { this->handle_connect(ec); });
+	m_websocket.next_layer().async_connect(*results.begin(), [this](const boost::system::error_code &ec) {
+		this->handle_connect(ec);
+	});
 }
 
 // **🔹 Async WebSocket Connection Handler**
@@ -252,5 +252,6 @@ void EventSub::check_connection_status(const boost::system::error_code &ec)
 	}
 
 	m_reconnect_timer.expires_after(std::chrono::seconds(10));
-	m_reconnect_timer.async_wait([this](const boost::system::error_code &ec) { this->check_connection_status(ec); });
+	m_reconnect_timer.async_wait(
+		[this](const boost::system::error_code &ec) { this->check_connection_status(ec); });
 }

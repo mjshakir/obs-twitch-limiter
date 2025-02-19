@@ -39,8 +39,7 @@ protected:
 	void notify_status(bool connected);
 	void notify_overlay(std::string_view message, size_t duration) const;
 
-	void handle_resolve(const boost::system::error_code &ec,
-			    boost::asio::ip::tcp::resolver::results_type results);
+	void handle_resolve(const boost::system::error_code &ec, boost::asio::ip::tcp::resolver::results_type results);
 	void handle_connect(const boost::system::error_code &ec);
 	void handle_read(const boost::system::error_code &ec, const size_t &bytes_transferred,
 			 boost::beast::flat_buffer &buffer);
