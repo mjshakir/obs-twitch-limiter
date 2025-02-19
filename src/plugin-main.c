@@ -39,20 +39,20 @@ OBS_MODULE_USE_DEFAULT_LOCALE("obs_twitch_plugin", "en-US")
 // Corrected C Wrapper forwarding to C++ functions
 bool obs_module_load(void)
 {
-	return TwitchLimiter::instance().initialized();
+	return TwitchLimiter_load();
 }
 
 void obs_module_unload(void)
 {
-	TwitchLimiter::instance().shutdown();
+	TwitchLimiter_unload();
 }
 
 obs_properties_t *obs_module_get_settings(void *data)
 {
-	return TwitchLimiter::instance().get_settings(data);
+	return TwitchLimiter_get_settings(data);
 }
 
 void obs_module_update_settings(obs_data_t *settings)
 {
-	TwitchLimiter::instance().update_settings(settings);
+	TwitchLimiter_update_settings(settings);
 }
