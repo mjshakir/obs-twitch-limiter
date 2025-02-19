@@ -204,7 +204,8 @@ void EventSub::handle_read(const boost::system::error_code &ec, const size_t &by
 		return;
 	}
 
-	std::string_view response = boost::beast::buffers_to_string(buffer.data());
+	std::string response = boost::beast::buffers_to_string(buffer.data()); // FIX: Now owns the string
+
 	buffer.consume(bytes_transferred);
 
 	rapidjson::Document jsonResponse;
@@ -214,7 +215,7 @@ void EventSub::handle_read(const boost::system::error_code &ec, const size_t &by
 		return;
 	}
 
-	if (!jsonResponse.HasMember("type") || !jsonResponse["type"].IsString()) {
+	if (!jsonResponse.HasMember("type") or !jsonResponse["type"].IsString()) {
 		blog(LOG_ERROR, "Invalid response: Missing type field");
 		async_listenForBets(); // Continue listening
 		return;
@@ -223,12 +224,12 @@ void EventSub::handle_read(const boost::system::error_code &ec, const size_t &by
 	if (jsonResponse["type"].GetString() == std::string(EVENTSUB_TYPE_NOTIFICATION) &&
 	    jsonResponse["subscription"]["type"].GetString() == std::string(EVENTSUB_BET_EVENT)) {
 
-		if (jsonResponse.HasMember("event") && jsonResponse["event"].HasMember("reward") &&
+		if (jsonResponse.HasMember("event") and jsonResponse["event"].HasMember("reward") &&
 		    jsonResponse["event"]["reward"].HasMember("cost") &&
 		    jsonResponse["event"]["reward"]["cost"].IsUint()) {
 
-			size_t betAmount = jsonResponse["event"]["reward"]["cost"].GetUint();
-			if (betAmount > m_max_bet_limit.load()) {
+			const size_t bet_amount = jsonResponse["event"]["reward"]["cost"].GetUint();
+			if (bet_amount > m_max_bet_limit.load()) {
 				notify_overlay(BET_LIMIT_WARNING.data() + std::to_string(m_max_bet_limit.load()),
 					       m_bet_timeout_duration.load());
 			}
