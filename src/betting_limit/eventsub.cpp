@@ -204,7 +204,7 @@ void EventSub::handle_read(const boost::system::error_code &ec, const size_t &by
 		return;
 	}
 
-	std::string response = boost::beast::buffers_to_string(buffer.data()); // FIX: Now owns the string
+	std::string response = boost::beast::buffers_to_string(buffer.data());
 
 	buffer.consume(bytes_transferred);
 
