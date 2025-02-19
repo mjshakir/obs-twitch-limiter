@@ -9,7 +9,7 @@ param(
 $ErrorActionPreference = 'Stop'
 
 # Set the VCPKG_ROOT environment variable to the vcpkg directory
-$toolchainFile = Join-Path ${env:VCPKG_ROOT} 'scripts\buildsystems\vcpkg.cmake'
+$toolchainFile = Join-Path $env:VCPKG_ROOT 'scripts\buildsystems\vcpkg.cmake'
 
 if ($env:CI -eq $null) {
     throw "Build-Windows.ps1 requires CI environment"
@@ -40,8 +40,8 @@ function Build {
     # Configure using the preset and the toolchain file
     $CmakeArgs = @(
         '--preset', "windows-ci-${Target}",
-        "-DCMAKE_TOOLCHAIN_FILE=${toolchainFile}",
-        "-Dlibobs_DIR=${env:libobs_DIR}"
+        "-DCMAKE_TOOLCHAIN_FILE=$toolchainFile",
+        "-Dlibobs_DIR=$env:libobs_DIR"
     )
 
     $CmakeBuildArgs = @(
