@@ -55,11 +55,11 @@ runs:
         git clone --recursive https://github.com/obsproject/obs-studio.git
         cd obs-studio
         mkdir build && cd build
-        cmake .. -G Ninja -DBUILD_BROWSER=OFF -DBUILD_OBSCONTROL=OFF -DCMAKE_BUILD_TYPE=Release -DCMAKE_SYSTEM_VERSION=10.0.20348.0 -DCMAKE_INSTALL_PREFIX="$env:AGENT_WORKFOLDER\libobs"
+        # Configure with MSVC (Visual Studio 17 2022) and Ninja ensure you have a recent Windows SDK installed.
+        cmake .. -G "Ninja" -A x64 -DBUILD_BROWSER=OFF -DBUILD_OBSCONTROL=OFF -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="$env:AGENT_WORKFOLDER\libobs"
         ninja install
-        # Set the libobs_DIR variable for later CMake runs:
+        # Set the libobs_DIR variable so your plugin can find libobs
         $env:libobs_DIR = "$env:AGENT_WORKFOLDER\libobs\lib\cmake\libobs"
-
 
     - name: Run macOS Build
       if: runner.os == 'macOS'

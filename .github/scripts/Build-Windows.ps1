@@ -8,31 +8,27 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
-# Set the vcpkg root (adjust if necessary)
+# Set the vcpkg root (assumes vcpkg was cloned in the repository root)
 $env:VCPKG_ROOT = (Resolve-Path ".\vcpkg").Path
 
 # Define the full path to the vcpkg toolchain file
-$toolchainFile = Join-Path ${env:VCPKG_ROOT} 'scripts\buildsystems\vcpkg.cmake'
+$toolchainFile = Join-Path $env:VCPKG_ROOT 'scripts\buildsystems\vcpkg.cmake'
 
-# Set the path where OBS‑deps have been downloaded/unpacked.
-# $env:OBS_DEPS_DIR = "D:\obs-deps"
-
-
-if ( $DebugPreference -eq 'Continue' ) {
+if ($DebugPreference -eq 'Continue') {
     $VerbosePreference = 'Continue'
     $InformationPreference = 'Continue'
 }
 
-if ( $env:CI -eq $null ) {
+if ($env:CI -eq $null) {
     throw "Build-Windows.ps1 requires CI environment"
 }
 
-if ( ! ( [System.Environment]::Is64BitOperatingSystem ) ) {
+if (-not [System.Environment]::Is64BitOperatingSystem) {
     throw "A 64-bit system is required to build the project."
 }
 
-if ( $PSVersionTable.PSVersion -lt '7.2.0' ) {
-    Write-Warning 'The obs-studio PowerShell build script requires PowerShell Core 7. Install or upgrade your PowerShell version: https://aka.ms/pscore6'
+if ($PSVersionTable.PSVersion -lt '7.2.0') {
+    Write-Warning 'This build script requires PowerShell Core 7 or later. Please upgrade your PowerShell.'
     exit 2
 }
 
@@ -40,68 +36,60 @@ function Build {
     trap {
         Pop-Location -Stack BuildTemp -ErrorAction 'SilentlyContinue'
         Write-Error $_
-        Log-Group
         exit 2
     }
 
     $ScriptHome = $PSScriptRoot
     $ProjectRoot = Resolve-Path -Path "$PSScriptRoot/../.."
 
-    $UtilityFunctions = Get-ChildItem -Path $PSScriptRoot/utils.pwsh/*.ps1 -Recurse
-
-    foreach($Utility in $UtilityFunctions) {
+    # Load any helper functions (if provided)
+    $UtilityFunctions = Get-ChildItem -Path $PSScriptRoot\utils.pwsh\*.ps1 -Recurse
+    foreach ($Utility in $UtilityFunctions) {
         Write-Debug "Loading $($Utility.FullName)"
         . $Utility.FullName
     }
 
     Push-Location -Stack BuildTemp
-    Ensure-Location $ProjectRoot
+    Set-Location $ProjectRoot
 
-    # $CmakeArgs = @('--preset', "windows-ci-${Target}")
-    # $CmakeArgs = @(
-    #     '--preset', "windows-ci-${Target}",
-    #     '-DCMAKE_TOOLCHAIN_FILE=' + (Join-Path ${env:VCPKG_ROOT} 'scripts\buildsystems\vcpkg.cmake')
-    # )
     $CmakeArgs = @(
         '--preset', "windows-ci-${Target}",
-        "-DCMAKE_TOOLCHAIN_FILE=${toolchainFile}"
-        # "-Dlibobs_DIR=${env:OBS_DEPS_DIR}\lib\cmake\libobs"
+        "-DCMAKE_TOOLCHAIN_FILE=${toolchainFile}",
         "-Dlibobs_DIR=${env:libobs_DIR}"
     )
 
     $CmakeBuildArgs = @('--build')
     $CmakeInstallArgs = @()
 
-    if ( $DebugPreference -eq 'Continue' ) {
-        $CmakeArgs += ('--debug-output')
-        $CmakeBuildArgs += ('--verbose')
-        $CmakeInstallArgs += ('--verbose')
+    if ($DebugPreference -eq 'Continue') {
+        $CmakeArgs += '--debug-output'
+        $CmakeBuildArgs += '--verbose'
+        $CmakeInstallArgs += '--verbose'
     }
 
     $CmakeBuildArgs += @(
-        '--preset', "windows-${Target}"
-        '--config', $Configuration
-        '--parallel'
+        '--preset', "windows-${Target}",
+        '--config', $Configuration,
+        '--parallel',
         '--', '/consoleLoggerParameters:Summary', '/noLogo'
     )
 
     $CmakeInstallArgs += @(
-        '--install', "build_${Target}"
-        '--prefix', "${ProjectRoot}/release/${Configuration}"
+        '--install', "build_${Target}",
+        '--prefix', "${ProjectRoot}\release\$Configuration",
         '--config', $Configuration
     )
 
-    Log-Group "Configuring ${ProductName}..."
+    Write-Host "Configuring project with arguments: $CmakeArgs"
     Invoke-External cmake @CmakeArgs
 
-    Log-Group "Building ${ProductName}..."
+    Write-Host "Building project with arguments: $CmakeBuildArgs"
     Invoke-External cmake @CmakeBuildArgs
 
-    Log-Group "Installing ${ProductName}..."
+    Write-Host "Installing project with arguments: $CmakeInstallArgs"
     Invoke-External cmake @CmakeInstallArgs
 
     Pop-Location -Stack BuildTemp
-    Log-Group
 }
 
 Build
