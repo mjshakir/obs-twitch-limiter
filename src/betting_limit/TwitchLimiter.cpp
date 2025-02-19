@@ -2,7 +2,6 @@
 #include "eventsub.hpp" // Your C++ EventSub class, also implemented in C++
 #include <obs.h>
 #include <obs-module.h>
-#include <obs-frontend-api.h>
 #include <obs-properties.h>
 #include <thread>
 #include <regex>
