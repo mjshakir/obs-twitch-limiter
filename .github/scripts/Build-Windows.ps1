@@ -14,6 +14,9 @@ $env:VCPKG_ROOT = (Resolve-Path ".\vcpkg").Path
 # Define the full path to the vcpkg toolchain file
 $toolchainFile = Join-Path ${env:VCPKG_ROOT} 'scripts\buildsystems\vcpkg.cmake'
 
+# Set the path where OBS‑deps have been downloaded/unpacked.
+$env:OBS_DEPS_DIR = "D:\obs-deps"
+
 
 if ( $DebugPreference -eq 'Continue' ) {
     $VerbosePreference = 'Continue'
@@ -62,7 +65,7 @@ function Build {
     $CmakeArgs = @(
         '--preset', "windows-ci-${Target}",
         "-DCMAKE_TOOLCHAIN_FILE=${toolchainFile}"
-        "-Dlibobs_DIR=$env:OBS_DEPS_DIR\lib\cmake\libobs"
+        "-Dlibobs_DIR=${env:OBS_DEPS_DIR}\lib\cmake\libobs"
     )
 
     $CmakeBuildArgs = @('--build')
