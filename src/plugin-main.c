@@ -47,5 +47,3 @@ void obs_module_update_settings(obs_data_t *settings)
 {
 	TwitchLimiter_update_settings(settings);
 }
-
-// Ensure there is a blank line at the end of this file.

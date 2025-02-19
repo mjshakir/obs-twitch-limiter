@@ -14,5 +14,3 @@ void TwitchLimiter_update_settings(obs_data_t *settings);
 #ifdef __cplusplus
 }
 #endif
-
-// Ensure there is a blank line at the end of this file.
