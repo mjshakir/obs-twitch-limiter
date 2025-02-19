@@ -35,7 +35,7 @@ runs:
       shell: zsh --no-rcs --errexit --pipefail {0}
       run: |
         brew update
-        brew install boost rapidjson
+        brew install boost rapidjson obs obs-frontend-api 
 
     - name: Install Dependencies 🛍️ (Windows)
       if: runner.os == 'Windows'
