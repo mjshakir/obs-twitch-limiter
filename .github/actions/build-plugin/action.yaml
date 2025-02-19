@@ -42,7 +42,7 @@ runs:
       shell: pwsh
       run: |
         # choco install boost-msvc-14.3 -y
-        choco install ninja -y
+        # choco install ninja -y
 
         # Clone & bootstrap vcpkg
         git clone https://github.com/microsoft/vcpkg.git
@@ -69,11 +69,12 @@ runs:
 
         # Use backticks for multiline in PowerShell.
         # Force MSVC by using the Ninja generator with -A x64 -T host=x64
-        cmake .. -A x64 -T host=x64 -DCMAKE_BUILD_TYPE=Release -DBUILD_BROWSER=OFF -DBUILD_OBSCONTROL=OFF -DCMAKE_INSTALL_PREFIX="$env:AGENT_WORKFOLDER\libobs" -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_ROOT\scripts\buildsystems\vcpkg.cmake" -B build -G Ninja
-
+        # cmake .. -A x64 -T host=x64 -DCMAKE_BUILD_TYPE=Release -DBUILD_BROWSER=OFF -DBUILD_OBSCONTROL=OFF -DCMAKE_INSTALL_PREFIX="$env:AGENT_WORKFOLDER\libobs" -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_ROOT\scripts\buildsystems\vcpkg.cmake" -B build -G Ninja
+        cmake .. -DCMAKE_BUILD_TYPE=Release -DBUILD_BROWSER=OFF -DBUILD_OBSCONTROL=OFF -DCMAKE_INSTALL_PREFIX="$env:AGENT_WORKFOLDER\libobs" -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_ROOT\scripts\buildsystems\vcpkg.cmake" -B build
         cd build
         # Build & Install libobs
-        ninja install
+        make -j$(nproc)
+        make install
 
         # Expose the libobs_DIR path to future steps if needed
         echo "libobs_DIR=$env:AGENT_WORKFOLDER\libobs\lib\cmake\libobs" | Out-File -FilePath $env:GITHUB_ENV -Append
