@@ -23,28 +23,28 @@ inputs:
 runs:
   using: composite
   steps:
-    # - name: Install Dependencies 🛍️ (Ubuntu)
-    #   if: runner.os == 'Linux'
-    #   shell: bash
-    #   run: |
-    #     sudo apt-get update
-    #     sudo apt-get install -y libboost-all-dev rapidjson-dev libobs-dev
+    - name: Install Dependencies 🛍️ (Ubuntu)
+      if: runner.os == 'Linux'
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libboost-all-dev rapidjson-dev libobs-dev
 
-    # - name: Install Dependencies 🛍️ (macOS)
-    #   if: runner.os == 'macOS'
-    #   shell: zsh --no-rcs --errexit --pipefail {0}
-    #   run: |
-    #     brew update
-    #     brew install boost rapidjson obs
+    - name: Install Dependencies 🛍️ (macOS)
+      if: runner.os == 'macOS'
+      shell: zsh --no-rcs --errexit --pipefail {0}
+      run: |
+        brew update
+        brew install boost rapidjson obs
 
-    # - name: Install Dependencies 🛍️ (Windows)
-    #   if: runner.os == 'Windows'
-    #   shell: pwsh
-    #   run: |
-    #     # choco install boost-msvc-14.3 -y
-    #     git clone https://github.com/microsoft/vcpkg.git
-    #     .\vcpkg\bootstrap-vcpkg.bat
-    #     .\vcpkg\vcpkg install boost-system boost-json rapidjson
+    - name: Install Dependencies 🛍️ (Windows)
+      if: runner.os == 'Windows'
+      shell: pwsh
+      run: |
+        # choco install boost-msvc-14.3 -y
+        git clone https://github.com/microsoft/vcpkg.git
+        .\vcpkg\bootstrap-vcpkg.bat
+        .\vcpkg\vcpkg install boost-system boost-json rapidjson
 
     - name: Run macOS Build
       if: runner.os == 'macOS'
