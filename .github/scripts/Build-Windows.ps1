@@ -11,11 +11,6 @@ $ErrorActionPreference = 'Stop'
 # Set the vcpkg root (adjust if necessary)
 $env:VCPKG_ROOT = (Resolve-Path ".\vcpkg").Path
 
-# Build configuration arguments: add the toolchain file parameter
-$CmakeArgs = @(
-    '--preset', "windows-ci-$Target",
-    '-DCMAKE_TOOLCHAIN_FILE=' + (Join-Path $env:VCPKG_ROOT 'scripts\buildsystems\vcpkg.cmake')
-)
 
 if ( $DebugPreference -eq 'Continue' ) {
     $VerbosePreference = 'Continue'
@@ -56,7 +51,11 @@ function Build {
     Push-Location -Stack BuildTemp
     Ensure-Location $ProjectRoot
 
-    $CmakeArgs = @('--preset', "windows-ci-${Target}")
+    # $CmakeArgs = @('--preset', "windows-ci-${Target}")
+    $CmakeArgs = @(
+        '--preset', "windows-ci-${Target}",
+        '-DCMAKE_TOOLCHAIN_FILE=' + (Join-Path ${env:VCPKG_ROOT} 'scripts\buildsystems\vcpkg.cmake')
+    )
     $CmakeBuildArgs = @('--build')
     $CmakeInstallArgs = @()
 
