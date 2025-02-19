@@ -6,10 +6,10 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Add custom plugin source files
-target_sources(${CMAKE_PROJECT_NAME} PRIVATE plugin-main.c betting_limit/TwitchLimiter.cpp betting_limit/eventsub.cpp)
-
-# Ensure `TwitchLimiter.cpp` is compiled as C++
-# set_source_files_properties(betting_limit/TwitchLimiter.cpp PROPERTIES LANGUAGE CXX)
+target_sources(
+  ${CMAKE_PROJECT_NAME}
+  PRIVATE plugin-main.c betting_limit/TwitchLimiterWrapper.c betting_limit/TwitchLimiter.cpp betting_limit/eventsub.cpp
+)
 
 # Include your plugin directory
 target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/betting_limit)
