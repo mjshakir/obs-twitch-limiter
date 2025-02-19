@@ -47,6 +47,18 @@ runs:
         .\vcpkg\vcpkg install boost-system boost-json rapidjson
         .\vcpkg\vcpkg integrate install
 
+    - name: Build libobs from source (Windows)
+      if: runner.os == 'Windows'
+      shell: pwsh
+      run: |
+        git clone --recursive https://github.com/obsproject/obs-studio.git
+        cd obs-studio
+        mkdir build && cd build
+        cmake .. -G Ninja -DBUILD_BROWSER=OFF -DBUILD_OBSCONTROL=OFF -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="$env:AGENT_WORKFOLDER\libobs"
+        ninja install
+        # Set the libobs_DIR variable for later CMake runs:
+        $env:libobs_DIR = "$env:AGENT_WORKFOLDER\libobs\lib\cmake\libobs"
+
     - name: Run macOS Build
       if: runner.os == 'macOS'
       shell: zsh --no-rcs --errexit --pipefail {0}
