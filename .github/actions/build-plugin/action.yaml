@@ -63,21 +63,19 @@ runs:
       if: runner.os == 'Windows'
       shell: pwsh
       run: |
+        # Clone OBS Studio
         git clone --recursive https://github.com/obsproject/obs-studio.git
         cd obs-studio
-        mkdir build 
+
+        # Use backticks for multiline in PowerShell.
+        # Force MSVC by using the Ninja generator with -A x64 -T host=x64
+        cmake .. -A x64 -T host=x64 -DCMAKE_BUILD_TYPE=Release -DBUILD_BROWSER=OFF -DBUILD_OBSCONTROL=OFF -DCMAKE_INSTALL_PREFIX="$env:AGENT_WORKFOLDER\libobs" -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_ROOT\scripts\buildsystems\vcpkg.cmake" -B build -G Ninja
+
         cd build
-
-        # CMAKE_TOOLCHAIN_FILE now works because $env:VCPKG_ROOT is set from $GITHUB_ENV
-        cmake .. -G Ninja -DCMAKE_BUILD_TYPE=Release ^
-          -DBUILD_BROWSER=OFF ^
-          -DBUILD_OBSCONTROL=OFF ^
-          -DCMAKE_INSTALL_PREFIX="$env:AGENT_WORKFOLDER\libobs" ^
-          -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_ROOT\scripts\buildsystems\vcpkg.cmake"
-
+        # Build & Install libobs
         ninja install
 
-        # Export libobs_DIR for subsequent steps (if needed).
+        # Expose the libobs_DIR path to future steps if needed
         echo "libobs_DIR=$env:AGENT_WORKFOLDER\libobs\lib\cmake\libobs" | Out-File -FilePath $env:GITHUB_ENV -Append
 
     - name: Run macOS Build
