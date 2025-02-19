@@ -27,10 +27,19 @@ target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_
 
 # Link required libraries
 # Find Boost components
-find_package(Boost REQUIRED json system)
+# find_package(Boost REQUIRED json system)
 
 # Find RapidJSON
-find_package(RapidJSON REQUIRED)
+# find_package(RapidJSON REQUIRED)
+
+# Find and configure dependencies
+if(WIN32)
+  # On Windows use the CONFIG mode targets (provided by OBS‑deps / vcpkg)
+  find_package(Boost REQUIRED COMPONENTS json system CONFIG)
+  find_package(RapidJSON CONFIG REQUIRED)
+else()
+  find_package(Boost REQUIRED json system)
+  find_package(RapidJSON REQUIRED)
 
 # Find OBS libobs
 find_package(libobs REQUIRED)
