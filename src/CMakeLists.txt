@@ -40,6 +40,7 @@ if(WIN32)
 else()
   find_package(Boost REQUIRED json system)
   find_package(RapidJSON REQUIRED)
+endif()
 
 # Find OBS libobs
 find_package(libobs REQUIRED)
