@@ -20,23 +20,14 @@ with this program. If not, see <https://www.gnu.org/licenses/>
 #include <plugin-support.h>
 #include "TwitchLimiterWrapper.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 bool obs_module_load(void);
 void obs_module_unload(void);
 obs_properties_t *obs_module_get_settings(void *data);
 void obs_module_update_settings(obs_data_t *settings);
 
-#ifdef __cplusplus
-}
-#endif
-
 OBS_DECLARE_MODULE()
 OBS_MODULE_USE_DEFAULT_LOCALE("obs_twitch_plugin", "en-US")
 
-// Corrected C Wrapper forwarding to C++ functions
 bool obs_module_load(void)
 {
 	return TwitchLimiter_load();
@@ -56,3 +47,5 @@ void obs_module_update_settings(obs_data_t *settings)
 {
 	TwitchLimiter_update_settings(settings);
 }
+
+// Ensure there is a blank line at the end of this file.
