@@ -73,7 +73,7 @@ runs:
         cmake .. -DCMAKE_BUILD_TYPE=Release -DBUILD_BROWSER=OFF -DBUILD_OBSCONTROL=OFF -DCMAKE_INSTALL_PREFIX="$env:AGENT_WORKFOLDER\libobs" -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_ROOT\scripts\buildsystems\vcpkg.cmake" -B build
         cd build
         # Build & Install libobs
-        make -j$(nproc)
+        cmake –build . –parallel
         make install
 
         # Expose the libobs_DIR path to future steps if needed
