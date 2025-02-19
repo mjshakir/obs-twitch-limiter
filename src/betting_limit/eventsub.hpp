@@ -18,8 +18,8 @@ class EventSub {
 public:
 	static EventSub &instance(void); // Singleton instance
 
-	void initialize(void) const;
-	void shutdown(void) const;
+	void initialize(void);
+	void shutdown(void);
 
 	void set_max_bet_limit(const size_t &limit);
 	void set_bet_timeout_duration(const size_t &duration);
@@ -33,19 +33,19 @@ protected:
 	EventSub(const EventSub &) = delete;
 	EventSub(EventSub &&) = delete;
 
-	void async_connect(void) const;
-	void async_listenForBets(void) const;
+	void async_connect(void);
+	void async_listenForBets(void);
 
 	void notify_status(bool connected);
 	void notify_overlay(std::string_view message, size_t duration) const;
 
 	void handle_resolve(const boost::system::error_code &ec,
-			    boost::asio::ip::tcp::resolver::results_type results) const;
+			    boost::asio::ip::tcp::resolver::results_type results);
 	void handle_connect(const boost::system::error_code &ec);
 	void handle_read(const boost::system::error_code &ec, const size_t &bytes_transferred,
-			 boost::beast::flat_buffer &buffer) const;
+			 boost::beast::flat_buffer &buffer);
 
-	void check_connection_status(const boost::system::error_code &ec) const;
+	void check_connection_status(const boost::system::error_code &ec);
 
 private:
 	std::atomic<bool> m_connected;

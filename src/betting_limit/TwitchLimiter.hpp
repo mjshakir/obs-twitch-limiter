@@ -21,7 +21,7 @@ public:
 	bool initialize(void);
 	void shutdown(void);
 	bool initialized(void) const;
-	obs_properties_t *get_settings(void *data) const;
+	obs_properties_t *get_settings(void *data);
 	void update_settings(obs_data_t *settings);
 
 	// OBS UI callback implementations

@@ -44,10 +44,10 @@ EventSub::~EventSub(void)
 }
 
 // **🔹 Initialize WebSocket Connection**
-void EventSub::initialize(void) const
+void EventSub::initialize(void)
 {
 	blog(LOG_INFO, "EventSub connection initializing...");
-	std::thread([this]() { m_io_context.run(); }).detach();
+	std::thread([this]() { this->m_io_context.run(); }).detach();
 
 	m_reconnect_timer.expires_after(std::chrono::seconds(10));
 	m_reconnect_timer.async_wait(
@@ -58,7 +58,7 @@ void EventSub::initialize(void) const
 }
 
 // **🔹 Shutdown WebSocket Connection**
-void EventSub::shutdown(void) const
+void EventSub::shutdown(void)
 {
 	blog(LOG_INFO, "EventSub connection closed.");
 	if (m_connected.load()) {
@@ -110,7 +110,7 @@ void EventSub::notify_overlay(std::string_view message, size_t duration) const
 }
 
 // **🔹 Async WebSocket Connection**
-void EventSub::async_connect(void) const
+void EventSub::async_connect(void)
 {
 	if (m_reconnect_attempts.load() >= MAX_RECONNECT_DELAY) {
 		blog(LOG_ERROR, "Max reconnect time (24 hours) reached. Manual reconnect required.");
@@ -149,14 +149,14 @@ void EventSub::async_connect(void) const
 
 // **🔹 Async Resolve Handler**
 void EventSub::handle_resolve(const boost::system::error_code &ec,
-			      boost::asio::ip::tcp::resolver::results_type results) const
+			      boost::asio::ip::tcp::resolver::results_type results)
 {
 	if (ec) {
 		blog(LOG_ERROR, "Failed to resolve Twitch EventSub host: %s", ec.message().c_str());
 		return;
 	}
 	m_websocket.next_layer().async_connect(*results.begin(),
-					       [this](const boost::system::error_code &ec) { handle_connect(ec); });
+					       [this](const boost::system::error_code &ec) { this->handle_connect(ec); });
 }
 
 // **🔹 Async WebSocket Connection Handler**
@@ -182,20 +182,20 @@ void EventSub::handle_connect(const boost::system::error_code &ec)
 }
 
 // **🔹 Async WebSocket Listener**
-void EventSub::async_listenForBets(void) const
+void EventSub::async_listenForBets(void)
 {
 	if (!m_websocket.is_open()) {
 		return;
 	}
 
 	m_websocket.async_read(m_buffer, [this](const boost::system::error_code &ec, const size_t &bytes_transferred) {
-		handle_read(ec, bytes_transferred, m_buffer);
+		this->handle_read(ec, bytes_transferred, m_buffer);
 	});
 }
 
 // **🔹 Async WebSocket Read Handler**
 void EventSub::handle_read(const boost::system::error_code &ec, const size_t &bytes_transferred,
-			   boost::beast::flat_buffer &buffer) const
+			   boost::beast::flat_buffer &buffer)
 {
 	if (ec) {
 		blog(LOG_ERROR, "WebSocket Read Error: %s", ec.message().c_str());
@@ -240,7 +240,7 @@ void EventSub::handle_read(const boost::system::error_code &ec, const size_t &by
 	async_listenForBets();
 }
 
-void EventSub::check_connection_status(const boost::system::error_code &ec) const
+void EventSub::check_connection_status(const boost::system::error_code &ec)
 {
 	if (ec) {
 		return;
@@ -252,5 +252,5 @@ void EventSub::check_connection_status(const boost::system::error_code &ec) cons
 	}
 
 	m_reconnect_timer.expires_after(std::chrono::seconds(10));
-	m_reconnect_timer.async_wait([this](const boost::system::error_code &ec) { check_connection_status(ec); });
+	m_reconnect_timer.async_wait([this](const boost::system::error_code &ec) { this->check_connection_status(ec); });
 }

@@ -63,7 +63,7 @@ bool TwitchLimiter::initialized(void) const
 	return m_initialized;
 }
 
-obs_properties_t *TwitchLimiter::get_settings(void *data) const
+obs_properties_t *TwitchLimiter::get_settings(void *data)
 {
 	static_cast<void>(data);
 	std::unique_ptr<obs_properties_t, decltype(&obs_properties_destroy)> props(obs_properties_create(),
