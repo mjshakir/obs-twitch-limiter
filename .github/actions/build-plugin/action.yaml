@@ -43,11 +43,21 @@ runs:
       run: |
         # choco install boost-msvc-14.3 -y
         choco install ninja -y
+
+        # Clone & bootstrap vcpkg
         git clone https://github.com/microsoft/vcpkg.git
         .\vcpkg\bootstrap-vcpkg.bat
+
+        # Install the libraries
         .\vcpkg\vcpkg install boost-system boost-json rapidjson
         .\vcpkg\vcpkg integrate install
-        $env:VCPKG_ROOT = (Resolve-Path ".\vcpkg").Path
+
+        # Manually export VCPKG_ROOT so next steps can see it
+        $vcpkgRoot = (Resolve-Path ".\vcpkg").Path
+        echo "VCPKG_ROOT=$vcpkgRoot" | Out-File -FilePath $env:GITHUB_ENV -Append
+        
+        # Also ensure that the path to ninja is on PATH for subsequent steps
+        echo "PATH=C:\ProgramData\chocolatey\bin;$($env:PATH)" | Out-File -FilePath $env:GITHUB_ENV -Append
 
     - name: Build libobs from source (Windows)
       if: runner.os == 'Windows'
@@ -55,15 +65,20 @@ runs:
       run: |
         git clone --recursive https://github.com/obsproject/obs-studio.git
         cd obs-studio
-        mkdir build && cd build
+        mkdir build 
+        cd build
 
-        # Configure obs-studio (do not pass -A or -DCMAKE_SYSTEM_VERSION; let the toolchain file and VS choose the platform)
-        cmake .. -G Ninja -DCMAKE_BUILD_TYPE=Release -DBUILD_BROWSER=OFF -DBUILD_OBSCONTROL=OFF -DCMAKE_INSTALL_PREFIX="$env:AGENT_WORKFOLDER\libobs" -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_ROOT\scripts\buildsystems\vcpkg.cmake"
+        # CMAKE_TOOLCHAIN_FILE now works because $env:VCPKG_ROOT is set from $GITHUB_ENV
+        cmake .. -G Ninja -DCMAKE_BUILD_TYPE=Release ^
+          -DBUILD_BROWSER=OFF ^
+          -DBUILD_OBSCONTROL=OFF ^
+          -DCMAKE_INSTALL_PREFIX="$env:AGENT_WORKFOLDER\libobs" ^
+          -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_ROOT\scripts\buildsystems\vcpkg.cmake"
 
         ninja install
 
-        # Set the libobs_DIR variable so our plugin can find libobs
-        $env:libobs_DIR = "$env:AGENT_WORKFOLDER\libobs\lib\cmake\libobs"
+        # Export libobs_DIR for subsequent steps (if needed).
+        echo "libobs_DIR=$env:AGENT_WORKFOLDER\libobs\lib\cmake\libobs" | Out-File -FilePath $env:GITHUB_ENV -Append
 
     - name: Run macOS Build
       if: runner.os == 'macOS'
