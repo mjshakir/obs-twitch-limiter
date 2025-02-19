@@ -56,7 +56,7 @@ runs:
         cd obs-studio
         mkdir build && cd build
         # Configure with MSVC (Visual Studio 17 2022) and Ninja ensure you have a recent Windows SDK installed.
-        cmake .. -G "Ninja" -A x64 -DBUILD_BROWSER=OFF -DBUILD_OBSCONTROL=OFF -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="$env:AGENT_WORKFOLDER\libobs"
+        cmake .. -G Ninja -DCMAKE_BUILD_TYPE=Release -DBUILD_BROWSER=OFF -DBUILD_OBSCONTROL=OFF -DCMAKE_SYSTEM_VERSION=10.0.20348.0 -DCMAKE_INSTALL_PREFIX="$env:AGENT_WORKFOLDER\libobs" -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_ROOT\scripts\buildsystems\vcpkg.cmake"
         ninja install
         # Set the libobs_DIR variable so your plugin can find libobs
         $env:libobs_DIR = "$env:AGENT_WORKFOLDER\libobs\lib\cmake\libobs"
