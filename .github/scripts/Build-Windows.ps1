@@ -8,6 +8,15 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
+# Set the vcpkg root (adjust if necessary)
+$env:VCPKG_ROOT = (Resolve-Path ".\vcpkg").Path
+
+# Build configuration arguments: add the toolchain file parameter
+$CmakeArgs = @(
+    '--preset', "windows-ci-$Target",
+    '-DCMAKE_TOOLCHAIN_FILE=' + (Join-Path $env:VCPKG_ROOT 'scripts\buildsystems\vcpkg.cmake')
+)
+
 if ( $DebugPreference -eq 'Continue' ) {
     $VerbosePreference = 'Continue'
     $InformationPreference = 'Continue'
