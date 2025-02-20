@@ -57,7 +57,7 @@ runs:
         echo "VCPKG_ROOT=$vcpkgRoot" | Out-File -FilePath $env:GITHUB_ENV -Append
         
         # Also ensure that the path to ninja is on PATH for subsequent steps
-        echo "PATH=C:\ProgramData\chocolatey\bin;$($env:PATH)" | Out-File -FilePath $env:GITHUB_ENV -Append
+        # echo "PATH=C:\ProgramData\chocolatey\bin;$($env:PATH)" | Out-File -FilePath $env:GITHUB_ENV -Append
 
     # - name: Build libobs from source (Windows)
     #   if: runner.os == 'Windows'

@@ -93,7 +93,8 @@ function Build-Plugin {
     $CmakeArgs = @(
         '--preset', "windows-ci-${Target}",
         '-S', $ProjectRoot,
-        "-DCMAKE_FIND_ROOT_PATH_MODE_PACKAGE=ONLY"
+        "-DCMAKE_FIND_ROOT_PATH_MODE_PACKAGE=ONLY",
+        "-DCMAKE_MODULE_PATH=$env:libobs_DIR"
     )
     if ($toolchainFile) {
         $CmakeArgs += "-DCMAKE_TOOLCHAIN_FILE=$toolchainFile"
@@ -102,6 +103,7 @@ function Build-Plugin {
         $CmakeArgs += "-Dlibobs_DIR=$env:libobs_DIR"
         $CmakeArgs += "-DCMAKE_PREFIX_PATH=$env:libobs_DIR"
     }
+
 
     Log-Group "Configuring OBS Plugin with CMake"
     Invoke-External cmake @CmakeArgs
