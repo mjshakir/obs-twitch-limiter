@@ -89,8 +89,9 @@ runs:
 
         # Now we have installed libobsConfig.cmake to $AGENT_WORKFOLDER\libobs\lib\cmake\libobs
         # echo "libobs_DIR=$($env:AGENT_WORKFOLDER)\libobs\lib\cmake\libobs" | Out-File $env:GITHUB_ENV -Append
-        $LibobsPath = Join-Path $env:AGENT_WORKFOLDER "libobs\lib\cmake\libobs"
+        $LibobsPath = Join-Path $env:GITHUB_WORKSPACE "libobs\lib\cmake\libobs"
         echo "libobs_DIR=$LibobsPath" | Out-File $env:GITHUB_ENV -Append
+
 
 
     - name: Run macOS Build
