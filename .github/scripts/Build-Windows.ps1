@@ -26,19 +26,13 @@ if ($PSVersionTable.PSVersion -lt [version]"7.2.0") {
 }
 
 ################################################################################
-# 2) Utility Functions (Normally in utils.pwsh/*.ps1)
-#    If you have these in separate .ps1 files, dot-source them instead:
-#
-#    $UtilityFunctions = Get-ChildItem -Path "$PSScriptRoot\utils.pwsh" -Filter *.ps1 -Recurse
-#    foreach ($Utility in $UtilityFunctions) {
-#        . $Utility.FullName
-#    }
+# 2) Utility Functions
+#    (If you have these in separate files, you can dot-source them instead.)
 ################################################################################
 
 function Ensure-Location {
     [CmdletBinding()]
     param([Parameter(Mandatory=$true)][string]$Path)
-
     if (-not (Test-Path $Path)) {
         New-Item -ItemType Directory -Force -Path $Path | Out-Null
     }
@@ -46,10 +40,7 @@ function Ensure-Location {
 }
 
 function Log-Group {
-    param(
-        [Parameter(Mandatory=$false)][string]$Message = ''
-    )
-    # Minimal example: just write a heading
+    param([string]$Message = '')
     if ($Message) {
         Write-Host "=== $Message ==="
     } else {
@@ -65,7 +56,6 @@ function Invoke-External {
         [Parameter(Position=1, ValueFromRemainingArguments=$true)]
         $Arguments
     )
-
     Write-Host "> Running: $Executable $($Arguments -join ' ')"
     & $Executable $Arguments
     if ($LastExitCode -ne 0) {
@@ -74,7 +64,7 @@ function Invoke-External {
 }
 
 ################################################################################
-# 3) Optional: If using vcpkg
+# 3) Optional: vcpkg toolchain file (if used)
 ################################################################################
 
 $toolchainFile = $null
@@ -85,6 +75,7 @@ if ($env:VCPKG_ROOT) {
 ################################################################################
 # 4) Main Build Function
 ################################################################################
+
 function Build-Plugin {
     trap {
         Pop-Location -Stack BuildTemp -ErrorAction 'SilentlyContinue'
@@ -92,32 +83,33 @@ function Build-Plugin {
         exit 2
     }
 
+    # Assume the repo root (with CMakePresets.json) is two levels up from this script.
     $ScriptHome = $PSScriptRoot
-    # Typically your plugin's root is two levels up: <repo>/.github/scripts/Build-Windows.ps1
     $ProjectRoot = Resolve-Path "$ScriptHome/../.."
 
-    # 4.1) Create or reuse a "temp_{Target}" folder for an out-of-tree build
+    # Create a temporary build folder inside the repo.
     $BuildFolder = Join-Path $ProjectRoot "temp_${Target}"
     Ensure-Location $BuildFolder
     Push-Location -Stack BuildTemp
 
-    # 4.2) Configure the plugin via CMake presets (CMakePresets.json is in $ProjectRoot)
+    # Configure: explicitly tell CMake where the source is (-S) so it finds CMakePresets.json.
     $CmakeArgs = @(
         '--preset', "windows-ci-${Target}",
-        '-S', $ProjectRoot  # The directory with CMakePresets.json
+        '-S', $ProjectRoot
     )
-
     if ($toolchainFile) {
         $CmakeArgs += "-DCMAKE_TOOLCHAIN_FILE=$toolchainFile"
     }
     if ($env:libobs_DIR) {
+        # Pass both libobs_DIR and also add it to CMAKE_PREFIX_PATH
         $CmakeArgs += "-Dlibobs_DIR=$env:libobs_DIR"
+        $CmakeArgs += "-DCMAKE_PREFIX_PATH=$env:libobs_DIR"
     }
 
     Log-Group "Configuring OBS Plugin with CMake"
     Invoke-External cmake @CmakeArgs
 
-    # 4.3) Build using the preset "windows-${Target}"
+    # Build step using the preset "windows-${Target}".
     $CmakeBuildArgs = @(
         '--build',
         '--preset', "windows-${Target}",
@@ -125,18 +117,15 @@ function Build-Plugin {
         '--parallel',
         '--', '/consoleLoggerParameters:Summary', '/noLogo'
     )
-
     Log-Group "Building OBS Plugin"
     Invoke-External cmake @CmakeBuildArgs
 
-    # 4.4) Optionally install the plugin to release/<Configuration>
-    #      (If you don't need an install step, you can remove this.)
+    # Install step (optional)
     $CmakeInstallArgs = @(
         '--install', "build_${Target}",
         '--prefix', "$ProjectRoot/release/$Configuration",
         '--config', $Configuration
     )
-
     Log-Group "Installing OBS Plugin"
     Invoke-External cmake @CmakeInstallArgs
 
@@ -145,6 +134,6 @@ function Build-Plugin {
 }
 
 ################################################################################
-# 5) Actually run the build
+# 5) Run the Build
 ################################################################################
 Build-Plugin
