@@ -84,15 +84,11 @@ runs:
       run: |
         git clone --recursive https://github.com/obsproject/obs-studio.git
         cd obs-studio
-        cmake -B build -A x64 -DCMAKE_INSTALL_PREFIX="$env:AGENT_WORKFOLDER\libobs" -DCMAKE_BUILD_TYPE=Release -DBUILD_BROWSER=OFF -DBUILD_OBSCONTROL=OFF
+        cmake -B build -A x64 -DCMAKE_INSTALL_PREFIX="$env:GITHUB_WORKSPACE\libobs" -DCMAKE_BUILD_TYPE=Release -DBUILD_BROWSER=OFF -DBUILD_OBSCONTROL=OFF
         cmake --build build --config Release --target install
 
-        # Now we have installed libobsConfig.cmake to $AGENT_WORKFOLDER\libobs\lib\cmake\libobs
-        # echo "libobs_DIR=$($env:AGENT_WORKFOLDER)\libobs\lib\cmake\libobs" | Out-File $env:GITHUB_ENV -Append
         $LibobsPath = Join-Path $env:GITHUB_WORKSPACE "libobs\lib\cmake\libobs"
-        echo "libobs_DIR=$LibobsPath" | Out-File $env:GITHUB_ENV -Append
-
-
+        echo "libobs_DIR=$LibobsPath" | Out-File -FilePath $env:GITHUB_ENV -Append
 
     - name: Run macOS Build
       if: runner.os == 'macOS'
