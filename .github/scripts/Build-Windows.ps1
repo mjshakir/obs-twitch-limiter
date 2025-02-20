@@ -1,6 +1,6 @@
 [CmdletBinding()]
 param(
-    [ValidateSet('x64', 'Win32')]
+    [ValidateSet('x64')]
     [string]$Target = 'x64',
 
     [ValidateSet('Debug', 'RelWithDebInfo', 'Release', 'MinSizeRel')]
@@ -10,62 +10,55 @@ param(
 $ErrorActionPreference = 'Stop'
 
 if (-not $env:CI) {
-    throw "Build-Windows.ps1 requires a CI environment"
+    throw "Build-Windows.ps1 requires CI environment"
 }
 
-if (-not [Environment]::Is64BitOperatingSystem) {
+if (-not [System.Environment]::Is64BitOperatingSystem) {
     throw "A 64-bit system is required to build the project."
 }
 
 if ($PSVersionTable.PSVersion -lt [version]"7.2.0") {
-    Write-Warning 'This script requires PowerShell 7.2 or higher.'
+    Write-Warning 'The build script requires PowerShell Core 7 or higher. Please upgrade: https://aka.ms/pscore6'
     exit 2
 }
 
-# ------------------------------------------------------------------------------
-# Load Utility Scripts
-# ------------------------------------------------------------------------------
-# We assume you have a folder:  .github/scripts/utils.pwsh/
-# containing: Ensure-Location.ps1, Invoke-External.ps1, Log-Group.ps1, etc.
-# This snippet loads them at runtime, so all helper functions are available.
-# ------------------------------------------------------------------------------
-$UtilityFunctions = Get-ChildItem -Path "$PSScriptRoot\utils.pwsh" -Filter *.ps1 -Recurse
-foreach ($Utility in $UtilityFunctions) {
-    Write-Host "Loading utility script: $($Utility.FullName)"
-    . $Utility.FullName
-}
+# Load utility scripts if needed (where 'Ensure-Location' / 'Log-Group' / 'Invoke-External' might be defined)
+# $UtilityFunctions = Get-ChildItem -Path "$PSScriptRoot\utils.pwsh" -Filter *.ps1 -Recurse
+# foreach ($Utility in $UtilityFunctions) {
+#     . $Utility.FullName
+# }
 
-# If you need to define $toolchainFile for vcpkg:
+# If you're using vcpkg:
+$toolchainFile = $null
 if ($env:VCPKG_ROOT) {
     $toolchainFile = Join-Path $env:VCPKG_ROOT 'scripts\buildsystems\vcpkg.cmake'
-} else {
-    $toolchainFile = $null
 }
 
 function Build-Plugin {
     trap {
-        # If anything fails, pop the location stack so we don't leave the shell stuck in a subdir
         Pop-Location -Stack BuildTemp -ErrorAction 'SilentlyContinue'
         Write-Error $_
         exit 2
     }
 
     $ScriptHome = $PSScriptRoot
-    # Typically your plugin repo root is two levels up from this script
     $ProjectRoot = Resolve-Path "$ScriptHome/../.."
 
-    # Create a subdirectory for temporary build usage (if desired)
-    # Then push it onto a directory stack named BuildTemp
-    $BuildTemp = Join-Path $ProjectRoot "temp_$Target"
-    Ensure-Location $BuildTemp
+    # If you want a separate temp folder:
+    $BuildFolder = Join-Path $ProjectRoot "temp_${Target}"
+    if (-not (Test-Path $BuildFolder)) {
+        New-Item -ItemType Directory -Path $BuildFolder | Out-Null
+    }
+
+    # Push that build folder as our working directory
     Push-Location -Stack BuildTemp
+    Set-Location $BuildFolder
 
-    # --- Configure arguments for "cmake --preset" approach ---
+    # We'll explicitly point cmake to $ProjectRoot (where CMakePresets.json is).
     $CmakeArgs = @(
-        '--preset', "windows-ci-${Target}"
+        '--preset', "windows-ci-${Target}",
+        '-S', $ProjectRoot  # <--- The big fix: read presets from $ProjectRoot
     )
-
-    # If your plugin uses vcpkg or needs to find libobs, add them:
     if ($toolchainFile) {
         $CmakeArgs += "-DCMAKE_TOOLCHAIN_FILE=$toolchainFile"
     }
@@ -73,7 +66,10 @@ function Build-Plugin {
         $CmakeArgs += "-Dlibobs_DIR=$env:libobs_DIR"
     }
 
-    # --- Build arguments ---
+    # e.g. Log-Group "Configuring Plugin..." # if you have that function
+    Invoke-External cmake @CmakeArgs
+
+    # Build command: 'cmake --build --preset windows-x64' or the same preset name
     $CmakeBuildArgs = @(
         '--build', 
         '--preset', "windows-${Target}",
@@ -81,26 +77,17 @@ function Build-Plugin {
         '--parallel',
         '--', '/consoleLoggerParameters:Summary', '/noLogo'
     )
+    Invoke-External cmake @CmakeBuildArgs
 
-    # --- Install arguments (optional) ---
+    # Or install
     $CmakeInstallArgs = @(
         '--install', "build_${Target}",
         '--prefix', "$ProjectRoot/release/$Configuration",
         '--config', $Configuration
     )
-
-    Log-Group "Configuring OBS Plugin..."
-    Invoke-External cmake @CmakeArgs
-
-    Log-Group "Building OBS Plugin..."
-    Invoke-External cmake @CmakeBuildArgs
-
-    Log-Group "Installing OBS Plugin..."
     Invoke-External cmake @CmakeInstallArgs
 
-    # Return to original directory
     Pop-Location -Stack BuildTemp
-    Log-Group
 }
 
 Build-Plugin
