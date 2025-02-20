@@ -59,24 +59,35 @@ runs:
         # Also ensure that the path to ninja is on PATH for subsequent steps
         echo "PATH=C:\ProgramData\chocolatey\bin;$($env:PATH)" | Out-File -FilePath $env:GITHUB_ENV -Append
 
+    # - name: Build libobs from source (Windows)
+    #   if: runner.os == 'Windows'
+    #   shell: pwsh
+    #   run: |
+    #     # Clone OBS Studio
+    #     git clone --recursive https://github.com/obsproject/obs-studio.git
+    #     cd obs-studio
+
+    #     # Use backticks for multiline in PowerShell.
+    #     # Force MSVC by using the Ninja generator with -A x64 -T host=x64
+    #     # cmake .. -A x64 -T host=x64 -DCMAKE_BUILD_TYPE=Release -DBUILD_BROWSER=OFF -DBUILD_OBSCONTROL=OFF -DCMAKE_INSTALL_PREFIX="$env:AGENT_WORKFOLDER\libobs" -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_ROOT\scripts\buildsystems\vcpkg.cmake" -B build -G Ninja
+    #     cmake .. -DCMAKE_BUILD_TYPE=Release -DBUILD_BROWSER=OFF -DBUILD_OBSCONTROL=OFF -DCMAKE_INSTALL_PREFIX="$env:AGENT_WORKFOLDER\libobs" -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_ROOT\scripts\buildsystems\vcpkg.cmake" -B build
+    #     cd build
+    #     # Build & Install libobs
+    #     cmake --build . --config Release --target install
+
+    #     # Expose the libobs_DIR path to future steps if needed
+    #     echo "libobs_DIR=$env:AGENT_WORKFOLDER\libobs\lib\cmake\libobs" | Out-File -FilePath $env:GITHUB_ENV -Append
+
     - name: Build libobs from source (Windows)
-      if: runner.os == 'Windows'
       shell: pwsh
       run: |
-        # Clone OBS Studio
         git clone --recursive https://github.com/obsproject/obs-studio.git
         cd obs-studio
+        cmake -B build -A x64 -DCMAKE_INSTALL_PREFIX="$env:AGENT_WORKFOLDER\libobs" -DCMAKE_BUILD_TYPE=Release -DBUILD_BROWSER=OFF -DBUILD_OBSCONTROL=OFF
+        cmake --build build --config Release --target install
 
-        # Use backticks for multiline in PowerShell.
-        # Force MSVC by using the Ninja generator with -A x64 -T host=x64
-        # cmake .. -A x64 -T host=x64 -DCMAKE_BUILD_TYPE=Release -DBUILD_BROWSER=OFF -DBUILD_OBSCONTROL=OFF -DCMAKE_INSTALL_PREFIX="$env:AGENT_WORKFOLDER\libobs" -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_ROOT\scripts\buildsystems\vcpkg.cmake" -B build -G Ninja
-        cmake .. -DCMAKE_BUILD_TYPE=Release -DBUILD_BROWSER=OFF -DBUILD_OBSCONTROL=OFF -DCMAKE_INSTALL_PREFIX="$env:AGENT_WORKFOLDER\libobs" -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_ROOT\scripts\buildsystems\vcpkg.cmake" -B build
-        cd build
-        # Build & Install libobs
-        cmake –build . --config Release --target install
-
-        # Expose the libobs_DIR path to future steps if needed
-        echo "libobs_DIR=$env:AGENT_WORKFOLDER\libobs\lib\cmake\libobs" | Out-File -FilePath $env:GITHUB_ENV -Append
+        # Now we have installed libobsConfig.cmake to $AGENT_WORKFOLDER\libobs\lib\cmake\libobs
+        echo "libobs_DIR=$env:AGENT_WORKFOLDER\libobs\lib\cmake\libobs" | Out-File $env:GITHUB_ENV -Append
 
     - name: Run macOS Build
       if: runner.os == 'macOS'
