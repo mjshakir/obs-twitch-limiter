@@ -26,10 +26,8 @@ if ($PSVersionTable.PSVersion -lt [version]"7.2.0") {
 }
 
 ################################################################################
-# 2) Utility Functions
-#    (If you have these in separate files, you can dot-source them instead.)
+# 2) Utility Functions (if not dot-sourced from your utils folder)
 ################################################################################
-
 function Ensure-Location {
     [CmdletBinding()]
     param([Parameter(Mandatory=$true)][string]$Path)
@@ -66,7 +64,6 @@ function Invoke-External {
 ################################################################################
 # 3) Optional: vcpkg toolchain file (if used)
 ################################################################################
-
 $toolchainFile = $null
 if ($env:VCPKG_ROOT) {
     $toolchainFile = Join-Path $env:VCPKG_ROOT 'scripts\buildsystems\vcpkg.cmake'
@@ -75,7 +72,6 @@ if ($env:VCPKG_ROOT) {
 ################################################################################
 # 4) Main Build Function
 ################################################################################
-
 function Build-Plugin {
     trap {
         Pop-Location -Stack BuildTemp -ErrorAction 'SilentlyContinue'
@@ -93,15 +89,16 @@ function Build-Plugin {
     Push-Location -Stack BuildTemp
 
     # Configure: explicitly tell CMake where the source is (-S) so it finds CMakePresets.json.
+    # Also, add -DCMAKE_FIND_ROOT_PATH_MODE_PACKAGE=NEVER so that vcpkg's root doesn't override our search.
     $CmakeArgs = @(
         '--preset', "windows-ci-${Target}",
-        '-S', $ProjectRoot
+        '-S', $ProjectRoot,
+        "-DCMAKE_FIND_ROOT_PATH_MODE_PACKAGE=NEVER"
     )
     if ($toolchainFile) {
         $CmakeArgs += "-DCMAKE_TOOLCHAIN_FILE=$toolchainFile"
     }
     if ($env:libobs_DIR) {
-        # Pass both libobs_DIR and also add it to CMAKE_PREFIX_PATH
         $CmakeArgs += "-Dlibobs_DIR=$env:libobs_DIR"
         $CmakeArgs += "-DCMAKE_PREFIX_PATH=$env:libobs_DIR"
     }
@@ -120,7 +117,7 @@ function Build-Plugin {
     Log-Group "Building OBS Plugin"
     Invoke-External cmake @CmakeBuildArgs
 
-    # Install step (optional)
+    # Install step (optional).
     $CmakeInstallArgs = @(
         '--install', "build_${Target}",
         '--prefix', "$ProjectRoot/release/$Configuration",

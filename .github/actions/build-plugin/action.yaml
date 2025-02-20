@@ -78,6 +78,18 @@ runs:
     #     # Expose the libobs_DIR path to future steps if needed
     #     echo "libobs_DIR=$env:AGENT_WORKFOLDER\libobs\lib\cmake\libobs" | Out-File -FilePath $env:GITHUB_ENV -Append
 
+    # - name: Build libobs from source (Windows)
+    #   if: runner.os == 'Windows'
+    #   shell: pwsh
+    #   run: |
+    #     git clone --recursive https://github.com/obsproject/obs-studio.git
+    #     cd obs-studio
+    #     cmake -B build -A x64 -DCMAKE_INSTALL_PREFIX="$env:GITHUB_WORKSPACE\libobs" -DCMAKE_BUILD_TYPE=Release -DBUILD_BROWSER=OFF -DBUILD_OBSCONTROL=OFF
+    #     cmake --build build --config Release --target install
+
+    #     $LibobsPath = Join-Path $env:GITHUB_WORKSPACE "libobs\lib\cmake\libobs"
+    #     echo "libobs_DIR=$LibobsPath" | Out-File -FilePath $env:GITHUB_ENV -Append
+
     - name: Build libobs from source (Windows)
       if: runner.os == 'Windows'
       shell: pwsh
@@ -86,7 +98,6 @@ runs:
         cd obs-studio
         cmake -B build -A x64 -DCMAKE_INSTALL_PREFIX="$env:GITHUB_WORKSPACE\libobs" -DCMAKE_BUILD_TYPE=Release -DBUILD_BROWSER=OFF -DBUILD_OBSCONTROL=OFF
         cmake --build build --config Release --target install
-
         $LibobsPath = Join-Path $env:GITHUB_WORKSPACE "libobs\lib\cmake\libobs"
         echo "libobs_DIR=$LibobsPath" | Out-File -FilePath $env:GITHUB_ENV -Append
 
@@ -152,12 +163,22 @@ runs:
 
     #     .github/scripts/Build-Windows.ps1 @BuildArgs
 
+    # - name: Run Windows Build
+    #   if: runner.os == 'Windows'
+    #   shell: pwsh
+    #   run: |
+    #     .github/scripts/Build-Windows.ps1 -Target x64 -Configuration RelWithDebInfo
+
     - name: Run Windows Build
       if: runner.os == 'Windows'
       shell: pwsh
       run: |
-        .github/scripts/Build-Windows.ps1 -Target x64 -Configuration RelWithDebInfo
-
+        if ($Env:RUNNER_DEBUG) { Set-PSDebug -Trace 1 }
+        $BuildArgs = @{
+          Target = 'x64'
+          Configuration = 'RelWithDebInfo'
+        }
+        .github/scripts/Build-Windows.ps1 @BuildArgs
   
     - name: Create Summary 📊
       if: contains(fromJSON('["Linux", "macOS"]'),runner.os)
