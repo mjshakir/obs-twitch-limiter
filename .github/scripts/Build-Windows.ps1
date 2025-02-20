@@ -26,7 +26,7 @@ if ($PSVersionTable.PSVersion -lt [version]"7.2.0") {
 }
 
 ################################################################################
-# 2) Utility Functions (if not dot-sourced from your utils folder)
+# 2) Utility Functions (or dot-source from your utils folder)
 ################################################################################
 function Ensure-Location {
     [CmdletBinding()]
@@ -67,11 +67,14 @@ function Invoke-External {
 $toolchainFile = $null
 if ($env:VCPKG_ROOT) {
     $toolchainFile = Join-Path $env:VCPKG_ROOT 'scripts\buildsystems\vcpkg.cmake'
+    # Convert toolchain file path to forward slashes:
+    $toolchainFile = $toolchainFile -replace '\\', '/'
 }
 
 ################################################################################
 # 4) Main Build Function
 ################################################################################
+
 function Build-Plugin {
     trap {
         Pop-Location -Stack BuildTemp -ErrorAction 'SilentlyContinue'
@@ -82,6 +85,8 @@ function Build-Plugin {
     # Assume the repo root (with CMakePresets.json) is two levels up from this script.
     $ScriptHome = $PSScriptRoot
     $ProjectRoot = Resolve-Path "$ScriptHome/../.."
+    # Convert project root to forward slashes:
+    $ProjectRootStr = $ProjectRoot.ToString() -replace '\\', '/'
 
     # Create a temporary build folder inside the repo.
     $BuildFolder = Join-Path $ProjectRoot "temp_${Target}"
@@ -89,26 +94,29 @@ function Build-Plugin {
     Push-Location -Stack BuildTemp
 
     # Configure: explicitly tell CMake where the source is (-S) so it finds CMakePresets.json.
-    # Also, add flags to force CMake to search for libobs only in the installed location.
+    # We set CMAKE_FIND_ROOT_PATH_MODE_PACKAGE to ONLY.
     $CmakeArgs = @(
         '--preset', "windows-ci-${Target}",
-        '-S', $ProjectRoot,
-        "-DCMAKE_FIND_ROOT_PATH_MODE_PACKAGE=ONLY",
-        "-DCMAKE_MODULE_PATH=$env:libobs_DIR"
+        '-S', $ProjectRootStr,
+        "-DCMAKE_FIND_ROOT_PATH_MODE_PACKAGE=ONLY"
     )
     if ($toolchainFile) {
         $CmakeArgs += "-DCMAKE_TOOLCHAIN_FILE=$toolchainFile"
     }
     if ($env:libobs_DIR) {
-        $CmakeArgs += "-Dlibobs_DIR=$env:libobs_DIR"
-        $CmakeArgs += "-DCMAKE_PREFIX_PATH=$env:libobs_DIR"
+        # Convert libobs_DIR to forward slashes:
+        $fixedLibobs = $env:libobs_DIR -replace '\\', '/'
+        $CmakeArgs += "-Dlibobs_DIR=$fixedLibobs"
+        $CmakeArgs += "-DCMAKE_PREFIX_PATH=$fixedLibobs"
+        # Optionally, you can also add this directory to CMAKE_MODULE_PATH:
+        $CmakeArgs += "-DCMAKE_MODULE_PATH=$fixedLibobs"
+    } else {
+        Write-Host "Warning: libobs_DIR is not set. Plugin build may fail."
     }
-
 
     Log-Group "Configuring OBS Plugin with CMake"
     Invoke-External cmake @CmakeArgs
 
-    # ... (rest of build and install steps remain unchanged)
     # Build step using the preset "windows-${Target}".
     $CmakeBuildArgs = @(
         '--build',
@@ -120,9 +128,10 @@ function Build-Plugin {
     Log-Group "Building OBS Plugin"
     Invoke-External cmake @CmakeBuildArgs
 
+    # Install step (optional).
     $CmakeInstallArgs = @(
         '--install', "build_${Target}",
-        '--prefix', "$ProjectRoot/release/$Configuration",
+        '--prefix', "$ProjectRootStr/release/$Configuration",
         '--config', $Configuration
     )
     Log-Group "Installing OBS Plugin"
@@ -131,6 +140,7 @@ function Build-Plugin {
     Pop-Location -Stack BuildTemp
     Log-Group "Done"
 }
+
 ################################################################################
 # 5) Run the Build
 ################################################################################
