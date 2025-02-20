@@ -98,8 +98,11 @@ runs:
         cd obs-studio
         cmake -B build -A x64 -DCMAKE_INSTALL_PREFIX="$env:GITHUB_WORKSPACE\libobs" -DCMAKE_BUILD_TYPE=Release -DBUILD_BROWSER=OFF -DBUILD_OBSCONTROL=OFF
         cmake --build build --config Release --target install
+
+        # Now libobsConfig.cmake should be in $env:GITHUB_WORKSPACE\libobs\lib\cmake\libobs
         $LibobsPath = Join-Path $env:GITHUB_WORKSPACE "libobs\lib\cmake\libobs"
         echo "libobs_DIR=$LibobsPath" | Out-File -FilePath $env:GITHUB_ENV -Append
+
 
     - name: Run macOS Build
       if: runner.os == 'macOS'

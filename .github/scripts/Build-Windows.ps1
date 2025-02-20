@@ -89,7 +89,7 @@ function Build-Plugin {
     Push-Location -Stack BuildTemp
 
     # Configure: explicitly tell CMake where the source is (-S) so it finds CMakePresets.json.
-    # Also, add -DCMAKE_FIND_ROOT_PATH_MODE_PACKAGE=NEVER so that vcpkg's root doesn't override our search.
+    # Also, add flags to force CMake to search for libobs only in the installed location.
     $CmakeArgs = @(
         '--preset', "windows-ci-${Target}",
         '-S', $ProjectRoot,
@@ -101,11 +101,13 @@ function Build-Plugin {
     if ($env:libobs_DIR) {
         $CmakeArgs += "-Dlibobs_DIR=$env:libobs_DIR"
         $CmakeArgs += "-DCMAKE_PREFIX_PATH=$env:libobs_DIR"
+        $CmakeArgs += "-DCMAKE_FIND_ROOT_PATH=$env:libobs_DIR"
     }
 
     Log-Group "Configuring OBS Plugin with CMake"
     Invoke-External cmake @CmakeArgs
 
+    # ... (rest of build and install steps remain unchanged)
     # Build step using the preset "windows-${Target}".
     $CmakeBuildArgs = @(
         '--build',
@@ -117,7 +119,6 @@ function Build-Plugin {
     Log-Group "Building OBS Plugin"
     Invoke-External cmake @CmakeBuildArgs
 
-    # Install step (optional).
     $CmakeInstallArgs = @(
         '--install', "build_${Target}",
         '--prefix', "$ProjectRoot/release/$Configuration",
@@ -129,7 +130,6 @@ function Build-Plugin {
     Pop-Location -Stack BuildTemp
     Log-Group "Done"
 }
-
 ################################################################################
 # 5) Run the Build
 ################################################################################
