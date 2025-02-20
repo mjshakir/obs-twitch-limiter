@@ -153,6 +153,7 @@ runs:
     #     .github/scripts/Build-Windows.ps1 @BuildArgs
 
     - name: Run Windows Build
+      if: runner.os == 'Windows'
       shell: pwsh
       run: |
         .github/scripts/Build-Windows.ps1 -Target x64 -Configuration RelWithDebInfo
