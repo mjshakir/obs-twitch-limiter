@@ -95,13 +95,18 @@ function Build-Plugin {
         '-S', $ProjectRoot,
         "-DCMAKE_FIND_ROOT_PATH_MODE_PACKAGE=NEVER"
     )
+
     if ($toolchainFile) {
         $CmakeArgs += "-DCMAKE_TOOLCHAIN_FILE=$toolchainFile"
+    } else {
+        Write-Host "Warning: VCPKG toolchain not detected. Proceeding without it."
     }
+
     if ($env:libobs_DIR) {
         $CmakeArgs += "-Dlibobs_DIR=$env:libobs_DIR"
         $CmakeArgs += "-DCMAKE_PREFIX_PATH=$env:libobs_DIR"
-        $CmakeArgs += "-DCMAKE_FIND_ROOT_PATH=$env:libobs_DIR"
+    } else {
+        Write-Host "Warning: libobs_DIR environment variable is not set. The plugin build might fail."
     }
 
     Log-Group "Configuring OBS Plugin with CMake"
