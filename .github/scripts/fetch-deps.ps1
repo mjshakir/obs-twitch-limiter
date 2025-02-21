@@ -65,23 +65,32 @@ if (Test-Path $libobsPath) {
     Write-Warning "Could not find libobsConfig.cmake at expected location: $libobsPath"
     Write-Host "Falling back to building OBS from source to generate libobs..."
 
-    # Fallback: Build OBS from source to obtain libobs.
+    # Define a folder for the fallback OBS build.
     $obsSourceDir = Join-Path $env:GITHUB_WORKSPACE "obs-studio-fallback"
+
+    # Clone the OBS Studio repository into the fallback folder.
     git clone --recursive https://github.com/obsproject/obs-studio.git $obsSourceDir
 
     Push-Location $obsSourceDir
-    # Adjust the following command as needed for your environment.
-    cmake -B build -A x64 -DCMAKE_INSTALL_PREFIX="$env:GITHUB_WORKSPACE\libobs_fallback" -DCMAKE_BUILD_TYPE=Release -DBUILD_BROWSER=OFF -DBUILD_OBSCONTROL=OFF
+
+    # Run CMake to configure the build.
+    # We add the flag -DCMAKE_INSTALL_LIBDIR="lib/cmake/libobs" to force installation
+    # of libobs config files into the expected subfolder.
+    cmake -B build -A x64 -DCMAKE_INSTALL_PREFIX="$env:GITHUB_WORKSPACE\libobs_fallback" -DCMAKE_INSTALL_LIBDIR="lib/cmake/libobs" -DCMAKE_BUILD_TYPE=Release -DBUILD_BROWSER=OFF -DBUILD_OBSCONTROL=OFF
+
+    # Build and install OBS Studio (or at least libobs) from the fallback source.
     cmake --build build --config Release --target install
     Pop-Location
 
+    # Set the fallback libobs path.
     $fallbackLibobsPath = Join-Path $env:GITHUB_WORKSPACE "libobs_fallback\lib\cmake\libobs"
     if (Test-Path $fallbackLibobsPath) {
-         Write-Host "Fallback build successful. Setting libobs_DIR to $fallbackLibobsPath"
-         echo "libobs_DIR=$fallbackLibobsPath" | Out-File -FilePath $env:GITHUB_ENV -Append
-         echo "LIBOBS_INSTALL_DIR=$fallbackLibobsPath" | Out-File -FilePath $env:GITHUB_ENV -Append
+        Write-Host "Fallback build successful. Setting libobs_DIR to $fallbackLibobsPath"
+        echo "libobs_DIR=$fallbackLibobsPath" | Out-File -FilePath $env:GITHUB_ENV -Append
+        echo "LIBOBS_INSTALL_DIR=$fallbackLibobsPath" | Out-File -FilePath $env:GITHUB_ENV -Append
     } else {
-         Write-Error "Fallback build of libobs did not produce libobsConfig.cmake at expected location: $fallbackLibobsPath"
-         exit 1
+        Write-Error "Fallback build of libobs did not produce libobsConfig.cmake at expected location: $fallbackLibobsPath"
+        exit 1
     }
+
 }
