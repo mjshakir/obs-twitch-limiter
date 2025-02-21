@@ -59,18 +59,18 @@ runs:
     #     # Also ensure that the path to ninja is on PATH for subsequent steps
     #     # echo "PATH=C:\ProgramData\chocolatey\bin;$($env:PATH)" | Out-File -FilePath $env:GITHUB_ENV -Append
 
-    - name: Install Dependencies 🛍️ (Windows)
-      if: runner.os == 'Windows'
-      shell: pwsh
-      run: |
-        git clone https://github.com/microsoft/vcpkg.git
-        .\vcpkg\bootstrap-vcpkg.bat
-        # Specify the overlay port directory (assume you've placed it at <repo>/vcpkg_ports)
-        $overlay = "$env:GITHUB_WORKSPACE\vcpkg_ports"
-        .\vcpkg\vcpkg install boost-system boost-json rapidjson libobs --overlay-ports=$overlay
-        .\vcpkg\vcpkg integrate install
-      env:
-        VCPKG_ROOT: ${{ github.workspace }}/vcpkg
+    # - name: Install Dependencies 🛍️ (Windows)
+    #   if: runner.os == 'Windows'
+    #   shell: pwsh
+    #   run: |
+    #     git clone https://github.com/microsoft/vcpkg.git
+    #     .\vcpkg\bootstrap-vcpkg.bat
+    #     # Specify the overlay port directory (assume you've placed it at <repo>/vcpkg_ports)
+    #     $overlay = "$env:GITHUB_WORKSPACE\vcpkg_ports"
+    #     .\vcpkg\vcpkg install boost-system boost-json rapidjson libobs --overlay-ports=$overlay
+    #     .\vcpkg\vcpkg integrate install
+    #   env:
+    #     VCPKG_ROOT: ${{ github.workspace }}/vcpkg
 
     # - name: Build libobs from source (Windows)
     #   if: runner.os == 'Windows'
@@ -115,6 +115,20 @@ runs:
     #     $LibobsPath = Join-Path $env:GITHUB_WORKSPACE "libobs\lib\cmake\libobs"
     #     echo "libobs_DIR=$LibobsPath" | Out-File -FilePath $env:GITHUB_ENV -Append
 
+    # - name: Build libobs from source (Windows)
+    #   if: runner.os == 'Windows'
+    #   shell: pwsh
+    #   run: |
+    #     git clone --recursive https://github.com/obsproject/obs-studio.git
+    #     cd obs-studio
+    #     cmake -B build -A x64 -DCMAKE_INSTALL_PREFIX="$env:GITHUB_WORKSPACE\libobs" -DCMAKE_BUILD_TYPE=Release -DBUILD_BROWSER=OFF -DBUILD_OBSCONTROL=OFF
+    #     cmake --build build --config Release --target install
+
+    #     # Set environment variables for libobs (for the overlay port)
+    #     $LibobsPath = Join-Path $env:GITHUB_WORKSPACE "libobs\lib\cmake\libobs"
+    #     echo "libobs_DIR=$LibobsPath" | Out-File -FilePath $env:GITHUB_ENV -Append
+    #     echo "LIBOBS_INSTALL_DIR=$LibobsPath" | Out-File -FilePath $env:GITHUB_ENV -Append
+
     - name: Build libobs from source (Windows)
       if: runner.os == 'Windows'
       shell: pwsh
@@ -124,10 +138,23 @@ runs:
         cmake -B build -A x64 -DCMAKE_INSTALL_PREFIX="$env:GITHUB_WORKSPACE\libobs" -DCMAKE_BUILD_TYPE=Release -DBUILD_BROWSER=OFF -DBUILD_OBSCONTROL=OFF
         cmake --build build --config Release --target install
 
-        # Set environment variables for libobs (for the overlay port)
+        # Set both environment variables so that the overlay port sees libobs.
         $LibobsPath = Join-Path $env:GITHUB_WORKSPACE "libobs\lib\cmake\libobs"
         echo "libobs_DIR=$LibobsPath" | Out-File -FilePath $env:GITHUB_ENV -Append
         echo "LIBOBS_INSTALL_DIR=$LibobsPath" | Out-File -FilePath $env:GITHUB_ENV -Append
+
+    - name: Install Dependencies 🛍️ (Windows)
+      if: runner.os == 'Windows'
+      shell: pwsh
+      run: |
+        git clone https://github.com/microsoft/vcpkg.git
+        .\vcpkg\bootstrap-vcpkg.bat
+        $overlay = "$env:GITHUB_WORKSPACE\vcpkg_ports"
+        .\vcpkg\vcpkg install boost-system boost-json rapidjson libobs --overlay-ports=$overlay
+        .\vcpkg\vcpkg integrate install
+      env:
+        VCPKG_ROOT: ${{ github.workspace }}/vcpkg
+
         
     - name: Run macOS Build
       if: runner.os == 'macOS'
