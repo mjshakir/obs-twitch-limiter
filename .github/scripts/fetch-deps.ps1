@@ -23,7 +23,7 @@ $dep = $buildspec.dependencies.prebuilt
 
 # Construct the file name and URL for Windows x64.
 # This example assumes the file is named "<version>-windows-x64.zip"
-$fileName = "$($dep.version)-windows-x64.zip"
+$fileName = "obs-deps-$($dep.version)-windows-x64.zip"
 $url = "$($dep.baseUrl)/$($dep.version)/$fileName"
 
 Write-Host "Downloading prebuilt obs-deps from $url ..."
