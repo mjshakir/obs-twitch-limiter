@@ -37,27 +37,41 @@ runs:
         brew update
         brew install boost rapidjson obs
 
+    # - name: Install Dependencies 🛍️ (Windows)
+    #   if: runner.os == 'Windows'
+    #   shell: pwsh
+    #   run: |
+    #     # choco install boost-msvc-14.3 -y
+    #     # choco install ninja -y
+
+    #     # Clone & bootstrap vcpkg
+    #     git clone https://github.com/microsoft/vcpkg.git
+    #     .\vcpkg\bootstrap-vcpkg.bat
+
+    #     # Install the libraries
+    #     .\vcpkg\vcpkg install boost-system boost-json rapidjson
+    #     .\vcpkg\vcpkg integrate install
+
+    #     # Manually export VCPKG_ROOT so next steps can see it
+    #     $vcpkgRoot = (Resolve-Path ".\vcpkg").Path
+    #     echo "VCPKG_ROOT=$vcpkgRoot" | Out-File -FilePath $env:GITHUB_ENV -Append
+        
+    #     # Also ensure that the path to ninja is on PATH for subsequent steps
+    #     # echo "PATH=C:\ProgramData\chocolatey\bin;$($env:PATH)" | Out-File -FilePath $env:GITHUB_ENV -Append
+
     - name: Install Dependencies 🛍️ (Windows)
       if: runner.os == 'Windows'
       shell: pwsh
       run: |
-        # choco install boost-msvc-14.3 -y
-        # choco install ninja -y
-
-        # Clone & bootstrap vcpkg
         git clone https://github.com/microsoft/vcpkg.git
         .\vcpkg\bootstrap-vcpkg.bat
-
-        # Install the libraries
-        .\vcpkg\vcpkg install boost-system boost-json rapidjson
+        # Set the overlay ports folder to the vcpkg-ports directory in your repo.
+        $overlay = "$env:GITHUB_WORKSPACE\vcpkg_ports"
+        # Install Boost, RapidJSON, and our overlay port for libobs.
+        .\vcpkg\vcpkg install boost-system boost-json rapidjson libobs --overlay-ports=$overlay
         .\vcpkg\vcpkg integrate install
-
-        # Manually export VCPKG_ROOT so next steps can see it
-        $vcpkgRoot = (Resolve-Path ".\vcpkg").Path
-        echo "VCPKG_ROOT=$vcpkgRoot" | Out-File -FilePath $env:GITHUB_ENV -Append
-        
-        # Also ensure that the path to ninja is on PATH for subsequent steps
-        # echo "PATH=C:\ProgramData\chocolatey\bin;$($env:PATH)" | Out-File -FilePath $env:GITHUB_ENV -Append
+      env:
+        VCPKG_ROOT: ${{ github.workspace }}/vcpkg
 
     # - name: Build libobs from source (Windows)
     #   if: runner.os == 'Windows'
@@ -90,6 +104,18 @@ runs:
     #     $LibobsPath = Join-Path $env:GITHUB_WORKSPACE "libobs\lib\cmake\libobs"
     #     echo "libobs_DIR=$LibobsPath" | Out-File -FilePath $env:GITHUB_ENV -Append
 
+    # - name: Build libobs from source (Windows)
+    #   if: runner.os == 'Windows'
+    #   shell: pwsh
+    #   run: |
+    #     git clone --recursive https://github.com/obsproject/obs-studio.git
+    #     cd obs-studio
+    #     cmake -B build -A x64 -DCMAKE_INSTALL_PREFIX="$env:GITHUB_WORKSPACE\libobs" -DCMAKE_BUILD_TYPE=Release -DBUILD_BROWSER=OFF -DBUILD_OBSCONTROL=OFF
+    #     cmake --build build --config Release --target install
+
+    #     $LibobsPath = Join-Path $env:GITHUB_WORKSPACE "libobs\lib\cmake\libobs"
+    #     echo "libobs_DIR=$LibobsPath" | Out-File -FilePath $env:GITHUB_ENV -Append
+
     - name: Build libobs from source (Windows)
       if: runner.os == 'Windows'
       shell: pwsh
@@ -99,8 +125,12 @@ runs:
         cmake -B build -A x64 -DCMAKE_INSTALL_PREFIX="$env:GITHUB_WORKSPACE\libobs" -DCMAKE_BUILD_TYPE=Release -DBUILD_BROWSER=OFF -DBUILD_OBSCONTROL=OFF
         cmake --build build --config Release --target install
 
+        # libobsConfig.cmake should be at:
+        #   $env:GITHUB_WORKSPACE\libobs\lib\cmake\libobs
         $LibobsPath = Join-Path $env:GITHUB_WORKSPACE "libobs\lib\cmake\libobs"
         echo "libobs_DIR=$LibobsPath" | Out-File -FilePath $env:GITHUB_ENV -Append
+        echo "LIBOBS_INSTALL_DIR=$LibobsPath" | Out-File -FilePath $env:GITHUB_ENV -Append
+
 
     - name: Run macOS Build
       if: runner.os == 'macOS'
@@ -170,6 +200,17 @@ runs:
     #   run: |
     #     .github/scripts/Build-Windows.ps1 -Target x64 -Configuration RelWithDebInfo
 
+    # - name: Run Windows Build
+    #   if: runner.os == 'Windows'
+    #   shell: pwsh
+    #   run: |
+    #     if ($Env:RUNNER_DEBUG) { Set-PSDebug -Trace 1 }
+    #     $BuildArgs = @{
+    #       Target = 'x64'
+    #       Configuration = 'RelWithDebInfo'
+    #     }
+    #     .github/scripts/Build-Windows.ps1 @BuildArgs
+
     - name: Run Windows Build
       if: runner.os == 'Windows'
       shell: pwsh
@@ -180,6 +221,7 @@ runs:
           Configuration = 'RelWithDebInfo'
         }
         .github/scripts/Build-Windows.ps1 @BuildArgs
+
   
     - name: Create Summary 📊
       if: contains(fromJSON('["Linux", "macOS"]'),runner.os)

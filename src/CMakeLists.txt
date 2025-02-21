@@ -45,14 +45,10 @@ endif()
 # Find OBS libobs
 if(WIN32)
   # Force search only in our installed OBS directory.
-  find_package(libobs REQUIRED
-    PATHS ${libobs_DIR}
-    NO_DEFAULT_PATH
-  )
+  find_package(libobs REQUIRED PATHS ${libobs_DIR} NO_DEFAULT_PATH)
 else()
   find_package(libobs REQUIRED)
 endif()
-
 
 # Find OBS frontend API
 find_package(obs-frontend-api REQUIRED)

@@ -61,6 +61,7 @@ function Invoke-External {
 $toolchainFile = $null
 if ($env:VCPKG_ROOT) {
     $toolchainFile = Join-Path $env:VCPKG_ROOT 'scripts\buildsystems\vcpkg.cmake'
+    # Convert backslashes to forward slashes
     $toolchainFile = $toolchainFile -replace '\\', '/'
 }
 
@@ -74,18 +75,18 @@ function Build-Plugin {
         exit 2
     }
 
-    # Assume repo root (with CMakePresets.json) is two levels up from this script.
+    # Assume the repo root (with CMakePresets.json) is two levels up from this script.
     $ScriptHome = $PSScriptRoot
     $ProjectRoot = Resolve-Path "$ScriptHome/../.."
     $ProjectRootStr = $ProjectRoot.ToString() -replace '\\', '/'
 
-    # Create a temporary build folder (out-of-tree build)
+    # Create a temporary out-of-tree build folder.
     $BuildFolder = Join-Path $ProjectRoot "temp_${Target}"
     Ensure-Location $BuildFolder
     Push-Location -Stack BuildTemp
 
-    # Build configuration arguments:
-    # We set the find-root mode to BOTH (so Boost is found via vcpkg) and add our libobs directory.
+    # Configure: use the preset from CMakePresets.json.
+    # We rely on the vcpkg toolchain (with our overlay port active) to find libobs.
     $CmakeArgs = @(
         '--preset', "windows-ci-${Target}",
         '-S', $ProjectRootStr,
@@ -94,20 +95,11 @@ function Build-Plugin {
     if ($toolchainFile) {
         $CmakeArgs += "-DCMAKE_TOOLCHAIN_FILE=$toolchainFile"
     }
-    if ($env:libobs_DIR) {
-        # Convert libobs_DIR to use forward slashes
-        $fixedLibobs = $env:libobs_DIR -replace '\\', '/'
-        $CmakeArgs += "-Dlibobs_DIR=$fixedLibobs"
-        $CmakeArgs += "-DCMAKE_PREFIX_PATH=$fixedLibobs"
-        $CmakeArgs += "-DCMAKE_MODULE_PATH=$fixedLibobs"
-    } else {
-        Write-Host "Warning: libobs_DIR is not set; plugin build may fail."
-    }
-
+    # We do not manually pass libobs paths because the overlay port registers it.
     Log-Group "Configuring OBS Plugin with CMake"
     Invoke-External cmake @CmakeArgs
 
-    # Build step using the build preset "windows-${Target}"
+    # Build step using the build preset.
     $CmakeBuildArgs = @(
         '--build',
         '--preset', "windows-${Target}",
@@ -118,7 +110,7 @@ function Build-Plugin {
     Log-Group "Building OBS Plugin"
     Invoke-External cmake @CmakeBuildArgs
 
-    # (Optional) Install step
+    # (Optional) Install step.
     $CmakeInstallArgs = @(
         '--install', "build_${Target}",
         '--prefix', "$ProjectRootStr/release/$Configuration",
