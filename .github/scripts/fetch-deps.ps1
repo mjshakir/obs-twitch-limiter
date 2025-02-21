@@ -4,7 +4,7 @@ param()
 $ErrorActionPreference = "Stop"
 
 # Define the path to buildspec.json relative to this script.
-# Assuming this script is in .github/scripts, and buildspec.json is in the repo root.
+# (Assumes this script is in .github/scripts and buildspec.json is in the repo root.)
 $buildspecPath = Join-Path $PSScriptRoot "../../buildspec.json"
 if (!(Test-Path $buildspecPath)) {
     Write-Error "buildspec.json not found at $buildspecPath"
@@ -14,7 +14,7 @@ if (!(Test-Path $buildspecPath)) {
 # Read and parse buildspec.json.
 $buildspec = Get-Content -Path $buildspecPath -Raw | ConvertFrom-Json
 
-# We want to use the 'prebuilt' dependency, which should contain libobs among other things.
+# We want to use the 'prebuilt' dependency (which should contain libobs among other things).
 if (-not $buildspec.dependencies.prebuilt) {
     Write-Error "No 'prebuilt' dependency found in buildspec.json"
     exit 1
@@ -42,7 +42,6 @@ if ($actualHash -ne $expectedHash.ToLower()) {
 Write-Host "Hash validated."
 
 # Define the destination folder where the archive will be extracted.
-# We'll extract into a folder called "dependencies/prebuilt" in the repository root.
 $destination = Join-Path $PSScriptRoot "../../dependencies/prebuilt"
 if (Test-Path $destination) {
     Remove-Item -Recurse -Force $destination
@@ -50,12 +49,10 @@ if (Test-Path $destination) {
 Expand-Archive -Path $fileName -DestinationPath $destination
 
 Write-Host "Extracted prebuilt obs-deps to $destination"
-
-# For debugging, list the extracted folder structure.
 Write-Host "Extracted folder contents:"
 Get-ChildItem -Path $destination -Recurse | Format-List FullName
 
-# Determine the correct folder for libobs.
+# Determine the expected folder for libobs.
 # This script assumes the archive extracts into a folder named "windows-deps-<version>-x64"
 $filePrefix = "windows-deps-$($dep.version)-x64"
 $libobsPath = Join-Path $destination "$filePrefix\lib\cmake\libobs"
@@ -66,4 +63,25 @@ if (Test-Path $libobsPath) {
     echo "LIBOBS_INSTALL_DIR=$libobsPath" | Out-File -FilePath $env:GITHUB_ENV -Append
 } else {
     Write-Warning "Could not find libobsConfig.cmake at expected location: $libobsPath"
+    Write-Host "Falling back to building OBS from source to generate libobs..."
+
+    # Fallback: Build OBS from source to obtain libobs.
+    $obsSourceDir = Join-Path $env:GITHUB_WORKSPACE "obs-studio-fallback"
+    git clone --recursive https://github.com/obsproject/obs-studio.git $obsSourceDir
+
+    Push-Location $obsSourceDir
+    # Adjust the following command as needed for your environment.
+    cmake -B build -A x64 -DCMAKE_INSTALL_PREFIX="$env:GITHUB_WORKSPACE\libobs_fallback" -DCMAKE_BUILD_TYPE=Release -DBUILD_BROWSER=OFF -DBUILD_OBSCONTROL=OFF
+    cmake --build build --config Release --target install
+    Pop-Location
+
+    $fallbackLibobsPath = Join-Path $env:GITHUB_WORKSPACE "libobs_fallback\lib\cmake\libobs"
+    if (Test-Path $fallbackLibobsPath) {
+         Write-Host "Fallback build successful. Setting libobs_DIR to $fallbackLibobsPath"
+         echo "libobs_DIR=$fallbackLibobsPath" | Out-File -FilePath $env:GITHUB_ENV -Append
+         echo "LIBOBS_INSTALL_DIR=$fallbackLibobsPath" | Out-File -FilePath $env:GITHUB_ENV -Append
+    } else {
+         Write-Error "Fallback build of libobs did not produce libobsConfig.cmake at expected location: $fallbackLibobsPath"
+         exit 1
+    }
 }
