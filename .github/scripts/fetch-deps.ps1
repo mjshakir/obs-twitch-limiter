@@ -114,7 +114,7 @@ endif()
     }
 
     # For debugging, list the contents of the fallback libobs config directory.
-    Write-Host "Listing fallback libobs config directory contents at $fallbackLibobsPath:"
+    Write-Host "Listing fallback libobs config directory contents at $fallbackLibobsPath :"
     Get-ChildItem -Path $fallbackLibobsPath -Recurse | Format-List FullName
 
     # Verify that the configuration file now exists.
