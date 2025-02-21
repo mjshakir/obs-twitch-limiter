@@ -65,9 +65,8 @@ runs:
       run: |
         git clone https://github.com/microsoft/vcpkg.git
         .\vcpkg\bootstrap-vcpkg.bat
-        # Set the overlay ports folder to the vcpkg-ports directory in your repo.
+        # Specify the overlay port directory (assume you've placed it at <repo>/vcpkg_ports)
         $overlay = "$env:GITHUB_WORKSPACE\vcpkg_ports"
-        # Install Boost, RapidJSON, and our overlay port for libobs.
         .\vcpkg\vcpkg install boost-system boost-json rapidjson libobs --overlay-ports=$overlay
         .\vcpkg\vcpkg integrate install
       env:
@@ -125,13 +124,11 @@ runs:
         cmake -B build -A x64 -DCMAKE_INSTALL_PREFIX="$env:GITHUB_WORKSPACE\libobs" -DCMAKE_BUILD_TYPE=Release -DBUILD_BROWSER=OFF -DBUILD_OBSCONTROL=OFF
         cmake --build build --config Release --target install
 
-        # libobsConfig.cmake should be at:
-        #   $env:GITHUB_WORKSPACE\libobs\lib\cmake\libobs
+        # Set environment variables for libobs (for the overlay port)
         $LibobsPath = Join-Path $env:GITHUB_WORKSPACE "libobs\lib\cmake\libobs"
         echo "libobs_DIR=$LibobsPath" | Out-File -FilePath $env:GITHUB_ENV -Append
         echo "LIBOBS_INSTALL_DIR=$LibobsPath" | Out-File -FilePath $env:GITHUB_ENV -Append
-
-
+        
     - name: Run macOS Build
       if: runner.os == 'macOS'
       shell: zsh --no-rcs --errexit --pipefail {0}
@@ -178,21 +175,21 @@ runs:
 
         .github/scripts/build-ubuntu ${build_args}
 
-    # - name: Run Windows Build
-    #   if: runner.os == 'Windows'
-    #   shell: pwsh
-    #   run: |
-    #     # Run Windows Build
-    #     if ( $Env:RUNNER_DEBUG -ne $null ) {
-    #       Set-PSDebug -Trace 1
-    #     }
+    - name: Run Windows Build
+      if: runner.os == 'Windows'
+      shell: pwsh
+      run: |
+        # Run Windows Build
+        if ( $Env:RUNNER_DEBUG -ne $null ) {
+          Set-PSDebug -Trace 1
+        }
 
-    #     $BuildArgs = @{
-    #       Target = '${{ inputs.target }}'
-    #       Configuration = '${{ inputs.config }}'
-    #     }
+        $BuildArgs = @{
+          Target = '${{ inputs.target }}'
+          Configuration = '${{ inputs.config }}'
+        }
 
-    #     .github/scripts/Build-Windows.ps1 @BuildArgs
+        .github/scripts/Build-Windows.ps1 @BuildArgs
 
     # - name: Run Windows Build
     #   if: runner.os == 'Windows'
@@ -211,16 +208,16 @@ runs:
     #     }
     #     .github/scripts/Build-Windows.ps1 @BuildArgs
 
-    - name: Run Windows Build
-      if: runner.os == 'Windows'
-      shell: pwsh
-      run: |
-        if ($Env:RUNNER_DEBUG) { Set-PSDebug -Trace 1 }
-        $BuildArgs = @{
-          Target = 'x64'
-          Configuration = 'RelWithDebInfo'
-        }
-        .github/scripts/Build-Windows.ps1 @BuildArgs
+    # - name: Run Windows Build
+    #   if: runner.os == 'Windows'
+    #   shell: pwsh
+    #   run: |
+    #     if ($Env:RUNNER_DEBUG) { Set-PSDebug -Trace 1 }
+    #     $BuildArgs = @{
+    #       Target = 'x64'
+    #       Configuration = 'RelWithDebInfo'
+    #     }
+    #     .github/scripts/Build-Windows.ps1 @BuildArgs
 
   
     - name: Create Summary 📊

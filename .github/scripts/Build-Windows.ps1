@@ -28,7 +28,7 @@ if ($PSVersionTable.PSVersion -lt [version]"7.2.0") {
 ################################################################################
 function Ensure-Location {
     [CmdletBinding()]
-    param([Parameter(Mandatory=$true)][string]$Path)
+    param([Parameter(Mandatory = $true)][string]$Path)
     if (-not (Test-Path $Path)) {
         New-Item -ItemType Directory -Force -Path $Path | Out-Null
     }
@@ -37,15 +37,19 @@ function Ensure-Location {
 
 function Log-Group {
     param([string]$Message = '')
-    if ($Message) { Write-Host "=== $Message ===" } else { Write-Host }
+    if ($Message) {
+        Write-Host "=== $Message ==="
+    } else {
+        Write-Host
+    }
 }
 
 function Invoke-External {
     [CmdletBinding()]
     param(
-        [Parameter(Position=0, Mandatory=$true)]
+        [Parameter(Position = 0, Mandatory = $true)]
         [string]$Executable,
-        [Parameter(Position=1, ValueFromRemainingArguments=$true)]
+        [Parameter(Position = 1, ValueFromRemainingArguments = $true)]
         $Arguments
     )
     Write-Host "> Running: $Executable $($Arguments -join ' ')"
@@ -61,7 +65,7 @@ function Invoke-External {
 $toolchainFile = $null
 if ($env:VCPKG_ROOT) {
     $toolchainFile = Join-Path $env:VCPKG_ROOT 'scripts\buildsystems\vcpkg.cmake'
-    # Convert backslashes to forward slashes
+    # Convert backslashes to forward slashes.
     $toolchainFile = $toolchainFile -replace '\\', '/'
 }
 
@@ -75,27 +79,25 @@ function Build-Plugin {
         exit 2
     }
 
-    # Assume the repo root (with CMakePresets.json) is two levels up from this script.
+    # Assume the repository root (which contains CMakePresets.json) is two levels up.
     $ScriptHome = $PSScriptRoot
     $ProjectRoot = Resolve-Path "$ScriptHome/../.."
     $ProjectRootStr = $ProjectRoot.ToString() -replace '\\', '/'
 
-    # Create a temporary out-of-tree build folder.
+    # Create an out-of-tree build folder.
     $BuildFolder = Join-Path $ProjectRoot "temp_${Target}"
     Ensure-Location $BuildFolder
     Push-Location -Stack BuildTemp
 
-    # Configure: use the preset from CMakePresets.json.
-    # We rely on the vcpkg toolchain (with our overlay port active) to find libobs.
+    # Configure: rely on the preset in CMakePresets.json.
     $CmakeArgs = @(
         '--preset', "windows-ci-${Target}",
-        '-S', $ProjectRootStr,
-        "-DCMAKE_FIND_ROOT_PATH_MODE_PACKAGE=BOTH"
+        '-S', $ProjectRootStr
     )
     if ($toolchainFile) {
         $CmakeArgs += "-DCMAKE_TOOLCHAIN_FILE=$toolchainFile"
     }
-    # We do not manually pass libobs paths because the overlay port registers it.
+    # Do not explicitly pass libobs paths—let vcpkg (with the overlay port) do its work.
     Log-Group "Configuring OBS Plugin with CMake"
     Invoke-External cmake @CmakeArgs
 
