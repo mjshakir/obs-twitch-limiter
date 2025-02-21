@@ -8,7 +8,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
-Set the vcpkg root (adjust if necessary)
+#Set the vcpkg root (adjust if necessary)
 $env:VCPKG_ROOT = (Resolve-Path ".\vcpkg").Path
 
 # Define the full path to the vcpkg toolchain file
