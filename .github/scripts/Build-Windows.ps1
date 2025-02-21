@@ -1,128 +1,102 @@
 [CmdletBinding()]
 param(
-    [ValidateSet('x64', 'Win32')]
-    [string]$Target = 'x64',
-
+    [ValidateSet('x64')]
+    [string] $Target = 'x64',
     [ValidateSet('Debug', 'RelWithDebInfo', 'Release', 'MinSizeRel')]
-    [string]$Configuration = 'RelWithDebInfo'
+    [string] $Configuration = 'RelWithDebInfo'
 )
 
 $ErrorActionPreference = 'Stop'
 
-################################################################################
-# 1) Basic Environment Checks
-################################################################################
-if (-not $env:CI) {
-    throw "Build-Windows.ps1 requires running in a CI environment."
+# Set the vcpkg root (adjust if necessary)
+$env:VCPKG_ROOT = (Resolve-Path ".\vcpkg").Path
+
+# Define the full path to the vcpkg toolchain file
+$toolchainFile = Join-Path ${env:VCPKG_ROOT} 'scripts\buildsystems\vcpkg.cmake'
+
+
+if ( $DebugPreference -eq 'Continue' ) {
+    $VerbosePreference = 'Continue'
+    $InformationPreference = 'Continue'
 }
-if (-not [System.Environment]::Is64BitOperatingSystem) {
-    throw "A 64-bit system is required to build the project on Windows."
+
+if ( $env:CI -eq $null ) {
+    throw "Build-Windows.ps1 requires CI environment"
 }
-if ($PSVersionTable.PSVersion -lt [version]"7.2.0") {
-    Write-Warning 'This script requires PowerShell Core 7.2 or higher.'
+
+if ( ! ( [System.Environment]::Is64BitOperatingSystem ) ) {
+    throw "A 64-bit system is required to build the project."
+}
+
+if ( $PSVersionTable.PSVersion -lt '7.2.0' ) {
+    Write-Warning 'The obs-studio PowerShell build script requires PowerShell Core 7. Install or upgrade your PowerShell version: https://aka.ms/pscore6'
     exit 2
 }
 
-################################################################################
-# 2) Utility Functions
-################################################################################
-function Ensure-Location {
-    [CmdletBinding()]
-    param([Parameter(Mandatory=$true)][string]$Path)
-    if (-not (Test-Path $Path)) {
-        New-Item -ItemType Directory -Force -Path $Path | Out-Null
-    }
-    Set-Location $Path
-}
-
-function Log-Group {
-    param([string]$Message = '')
-    if ($Message) { Write-Host "=== $Message ===" } else { Write-Host }
-}
-
-function Invoke-External {
-    [CmdletBinding()]
-    param(
-        [Parameter(Position=0, Mandatory=$true)]
-        [string]$Executable,
-        [Parameter(Position=1, ValueFromRemainingArguments=$true)]
-        $Arguments
-    )
-    Write-Host "> Running: $Executable $($Arguments -join ' ')"
-    & $Executable $Arguments
-    if ($LastExitCode -ne 0) {
-        throw "$Executable exited with code $LastExitCode"
-    }
-}
-
-################################################################################
-# 3) vcpkg Toolchain (if used)
-################################################################################
-$toolchainFile = $null
-if ($env:VCPKG_ROOT) {
-    $toolchainFile = Join-Path $env:VCPKG_ROOT 'scripts\buildsystems\vcpkg.cmake'
-    $toolchainFile = $toolchainFile -replace '\\', '/'
-}
-
-################################################################################
-# 4) Main Build Function
-################################################################################
-function Build-Plugin {
+function Build {
     trap {
         Pop-Location -Stack BuildTemp -ErrorAction 'SilentlyContinue'
         Write-Error $_
+        Log-Group
         exit 2
     }
 
-    # Assume repo root (with CMakePresets.json) is two levels up from this script.
     $ScriptHome = $PSScriptRoot
-    $ProjectRoot = Resolve-Path "$ScriptHome/../.."
-    $ProjectRootStr = $ProjectRoot.ToString() -replace '\\', '/'
+    $ProjectRoot = Resolve-Path -Path "$PSScriptRoot/../.."
 
-    # Create a temporary out-of-tree build folder.
-    $BuildFolder = Join-Path $ProjectRoot "temp_${Target}"
-    Ensure-Location $BuildFolder
+    $UtilityFunctions = Get-ChildItem -Path $PSScriptRoot/utils.pwsh/*.ps1 -Recurse
+
+    foreach($Utility in $UtilityFunctions) {
+        Write-Debug "Loading $($Utility.FullName)"
+        . $Utility.FullName
+    }
+
     Push-Location -Stack BuildTemp
+    Ensure-Location $ProjectRoot
 
-    # Configure: rely on the preset in CMakePresets.json.
+    # $CmakeArgs = @('--preset', "windows-ci-${Target}")
+    # $CmakeArgs = @(
+    #     '--preset', "windows-ci-${Target}",
+    #     '-DCMAKE_TOOLCHAIN_FILE=' + (Join-Path ${env:VCPKG_ROOT} 'scripts\buildsystems\vcpkg.cmake')
+    # )
     $CmakeArgs = @(
         '--preset', "windows-ci-${Target}",
-        '-S', $ProjectRootStr,
-        "-DCMAKE_FIND_ROOT_PATH_MODE_PACKAGE=BOTH"
+        "-DCMAKE_TOOLCHAIN_FILE=${toolchainFile}"
     )
-    if ($toolchainFile) {
-        $CmakeArgs += "-DCMAKE_TOOLCHAIN_FILE=$toolchainFile"
-    }
-    # Do not pass -Dlibobs_DIR or set CMAKE_PREFIX_PATH manually,
-    # since our overlay port (via vcpkg) will register libobs.
-    Log-Group "Configuring OBS Plugin with CMake"
-    Invoke-External cmake @CmakeArgs
 
-    # Build step using the build preset "windows-${Target}".
-    $CmakeBuildArgs = @(
-        '--build',
-        '--preset', "windows-${Target}",
-        '--config', $Configuration,
-        '--parallel',
+    $CmakeBuildArgs = @('--build')
+    $CmakeInstallArgs = @()
+
+    if ( $DebugPreference -eq 'Continue' ) {
+        $CmakeArgs += ('--debug-output')
+        $CmakeBuildArgs += ('--verbose')
+        $CmakeInstallArgs += ('--verbose')
+    }
+
+    $CmakeBuildArgs += @(
+        '--preset', "windows-${Target}"
+        '--config', $Configuration
+        '--parallel'
         '--', '/consoleLoggerParameters:Summary', '/noLogo'
     )
-    Log-Group "Building OBS Plugin"
-    Invoke-External cmake @CmakeBuildArgs
 
-    # (Optional) Install step.
-    $CmakeInstallArgs = @(
-        '--install', "build_${Target}",
-        '--prefix', "$ProjectRootStr/release/$Configuration",
+    $CmakeInstallArgs += @(
+        '--install', "build_${Target}"
+        '--prefix', "${ProjectRoot}/release/${Configuration}"
         '--config', $Configuration
     )
-    Log-Group "Installing OBS Plugin"
+
+    Log-Group "Configuring ${ProductName}..."
+    Invoke-External cmake @CmakeArgs
+
+    Log-Group "Building ${ProductName}..."
+    Invoke-External cmake @CmakeBuildArgs
+
+    Log-Group "Installing ${ProductName}..."
     Invoke-External cmake @CmakeInstallArgs
 
     Pop-Location -Stack BuildTemp
-    Log-Group "Done"
+    Log-Group
 }
 
-################################################################################
-# 5) Run the Build
-################################################################################
-Build-Plugin
+Build
