@@ -4,7 +4,7 @@ param()
 $ErrorActionPreference = "Stop"
 
 # Define the path to buildspec.json relative to this script
-$buildspecPath = Join-Path $PSScriptRoot "../buildspec.json"
+$buildspecPath = Join-Path $PSScriptRoot "../../buildspec.json"
 if (!(Test-Path $buildspecPath)) {
     Write-Error "buildspec.json not found at $buildspecPath"
     exit 1
