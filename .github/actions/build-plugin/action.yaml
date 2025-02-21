@@ -53,13 +53,13 @@ runs:
         # $vcpkgRoot = (Resolve-Path ".\vcpkg").Path
         # echo "VCPKG_ROOT=$vcpkgRoot" | Out-File -FilePath $env:GITHUB_ENV -Append
 
-    # - name: Download Prebuilt obs-deps (Windows)
-    #   if: runner.os == 'Windows'
-    #   shell: pwsh
-    #   run: |
-    #     # This script is part of obs-plugintemplate's automation.
-    #     # It reads buildspec.json and fetches the “prebuilt” artifact for windows-x64.
-    #     .github/scripts/Package-Windows.ps1
+    - name: Download Prebuilt obs-deps (Windows)
+      if: runner.os == 'Windows'
+      shell: pwsh
+      run: |
+        # This script is part of obs-plugintemplate's automation.
+        # It reads buildspec.json and fetches the “prebuilt” artifact for windows-x64.
+        .github/scripts/fetch-deps.ps1
     
     - name: Run macOS Build
       if: runner.os == 'macOS'
