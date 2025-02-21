@@ -37,126 +37,30 @@ runs:
         brew update
         brew install boost rapidjson obs
 
-    # - name: Install Dependencies 🛍️ (Windows)
-    #   if: runner.os == 'Windows'
-    #   shell: pwsh
-    #   run: |
-    #     # choco install boost-msvc-14.3 -y
-    #     # choco install ninja -y
-
-    #     # Clone & bootstrap vcpkg
-    #     git clone https://github.com/microsoft/vcpkg.git
-    #     .\vcpkg\bootstrap-vcpkg.bat
-
-    #     # Install the libraries
-    #     .\vcpkg\vcpkg install boost-system boost-json rapidjson
-    #     .\vcpkg\vcpkg integrate install
-
-    #     # Manually export VCPKG_ROOT so next steps can see it
-    #     $vcpkgRoot = (Resolve-Path ".\vcpkg").Path
-    #     echo "VCPKG_ROOT=$vcpkgRoot" | Out-File -FilePath $env:GITHUB_ENV -Append
-        
-    #     # Also ensure that the path to ninja is on PATH for subsequent steps
-    #     # echo "PATH=C:\ProgramData\chocolatey\bin;$($env:PATH)" | Out-File -FilePath $env:GITHUB_ENV -Append
-
-    # - name: Install Dependencies 🛍️ (Windows)
-    #   if: runner.os == 'Windows'
-    #   shell: pwsh
-    #   run: |
-    #     git clone https://github.com/microsoft/vcpkg.git
-    #     .\vcpkg\bootstrap-vcpkg.bat
-    #     # Specify the overlay port directory (assume you've placed it at <repo>/vcpkg_ports)
-    #     $overlay = "$env:GITHUB_WORKSPACE\vcpkg_ports"
-    #     .\vcpkg\vcpkg install boost-system boost-json rapidjson libobs --overlay-ports=$overlay
-    #     .\vcpkg\vcpkg integrate install
-    #   env:
-    #     VCPKG_ROOT: ${{ github.workspace }}/vcpkg
-
-    # - name: Build libobs from source (Windows)
-    #   if: runner.os == 'Windows'
-    #   shell: pwsh
-    #   run: |
-    #     # Clone OBS Studio
-    #     git clone --recursive https://github.com/obsproject/obs-studio.git
-    #     cd obs-studio
-
-    #     # Use backticks for multiline in PowerShell.
-    #     # Force MSVC by using the Ninja generator with -A x64 -T host=x64
-    #     # cmake .. -A x64 -T host=x64 -DCMAKE_BUILD_TYPE=Release -DBUILD_BROWSER=OFF -DBUILD_OBSCONTROL=OFF -DCMAKE_INSTALL_PREFIX="$env:AGENT_WORKFOLDER\libobs" -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_ROOT\scripts\buildsystems\vcpkg.cmake" -B build -G Ninja
-    #     cmake .. -DCMAKE_BUILD_TYPE=Release -DBUILD_BROWSER=OFF -DBUILD_OBSCONTROL=OFF -DCMAKE_INSTALL_PREFIX="$env:AGENT_WORKFOLDER\libobs" -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_ROOT\scripts\buildsystems\vcpkg.cmake" -B build
-    #     cd build
-    #     # Build & Install libobs
-    #     cmake --build . --config Release --target install
-
-    #     # Expose the libobs_DIR path to future steps if needed
-    #     echo "libobs_DIR=$env:AGENT_WORKFOLDER\libobs\lib\cmake\libobs" | Out-File -FilePath $env:GITHUB_ENV -Append
-
-    # - name: Build libobs from source (Windows)
-    #   if: runner.os == 'Windows'
-    #   shell: pwsh
-    #   run: |
-    #     git clone --recursive https://github.com/obsproject/obs-studio.git
-    #     cd obs-studio
-    #     cmake -B build -A x64 -DCMAKE_INSTALL_PREFIX="$env:GITHUB_WORKSPACE\libobs" -DCMAKE_BUILD_TYPE=Release -DBUILD_BROWSER=OFF -DBUILD_OBSCONTROL=OFF
-    #     cmake --build build --config Release --target install
-
-    #     $LibobsPath = Join-Path $env:GITHUB_WORKSPACE "libobs\lib\cmake\libobs"
-    #     echo "libobs_DIR=$LibobsPath" | Out-File -FilePath $env:GITHUB_ENV -Append
-
-    # - name: Build libobs from source (Windows)
-    #   if: runner.os == 'Windows'
-    #   shell: pwsh
-    #   run: |
-    #     git clone --recursive https://github.com/obsproject/obs-studio.git
-    #     cd obs-studio
-    #     cmake -B build -A x64 -DCMAKE_INSTALL_PREFIX="$env:GITHUB_WORKSPACE\libobs" -DCMAKE_BUILD_TYPE=Release -DBUILD_BROWSER=OFF -DBUILD_OBSCONTROL=OFF
-    #     cmake --build build --config Release --target install
-
-    #     $LibobsPath = Join-Path $env:GITHUB_WORKSPACE "libobs\lib\cmake\libobs"
-    #     echo "libobs_DIR=$LibobsPath" | Out-File -FilePath $env:GITHUB_ENV -Append
-
-    # - name: Build libobs from source (Windows)
-    #   if: runner.os == 'Windows'
-    #   shell: pwsh
-    #   run: |
-    #     git clone --recursive https://github.com/obsproject/obs-studio.git
-    #     cd obs-studio
-    #     cmake -B build -A x64 -DCMAKE_INSTALL_PREFIX="$env:GITHUB_WORKSPACE\libobs" -DCMAKE_BUILD_TYPE=Release -DBUILD_BROWSER=OFF -DBUILD_OBSCONTROL=OFF
-    #     cmake --build build --config Release --target install
-
-    #     # Set environment variables for libobs (for the overlay port)
-    #     $LibobsPath = Join-Path $env:GITHUB_WORKSPACE "libobs\lib\cmake\libobs"
-    #     echo "libobs_DIR=$LibobsPath" | Out-File -FilePath $env:GITHUB_ENV -Append
-    #     echo "LIBOBS_INSTALL_DIR=$LibobsPath" | Out-File -FilePath $env:GITHUB_ENV -Append
-
-    - name: Build libobs from source (Windows)
-      if: runner.os == 'Windows'
-      shell: pwsh
-      run: |
-        git clone --recursive https://github.com/obsproject/obs-studio.git
-        cd obs-studio
-        cmake -B build -A x64 -DCMAKE_INSTALL_PREFIX="$env:GITHUB_WORKSPACE\libobs" -DCMAKE_BUILD_TYPE=Release -DBUILD_BROWSER=OFF -DBUILD_OBSCONTROL=OFF
-        cmake --build build --config Release --target install
-
-        # Set the environment variables (convert backslashes to forward slashes to avoid escape issues)
-        $LibobsPath = (Join-Path $env:GITHUB_WORKSPACE "libobs\lib\cmake\libobs") #-replace '\\','/'
-        echo "libobs_DIR=$LibobsPath" | Out-File -FilePath $env:GITHUB_ENV -Append
-        echo "LIBOBS_INSTALL_DIR=$LibobsPath" | Out-File -FilePath $env:GITHUB_ENV -Append
-
-
     - name: Install Dependencies 🛍️ (Windows)
       if: runner.os == 'Windows'
       shell: pwsh
       run: |
+        # Clone & bootstrap vcpkg
         git clone https://github.com/microsoft/vcpkg.git
         .\vcpkg\bootstrap-vcpkg.bat
-        $overlay = "$env:GITHUB_WORKSPACE\vcpkg_ports"
-        .\vcpkg\vcpkg install boost-system boost-json rapidjson libobs --overlay-ports=$overlay
-        .\vcpkg\vcpkg integrate install
-      env:
-        VCPKG_ROOT: ${{ github.workspace }}\vcpkg
 
-        
+        # Install the libraries
+        .\vcpkg\vcpkg install boost-system boost-json rapidjson
+        .\vcpkg\vcpkg integrate install
+
+        # # Manually export VCPKG_ROOT so next steps can see it
+        # $vcpkgRoot = (Resolve-Path ".\vcpkg").Path
+        # echo "VCPKG_ROOT=$vcpkgRoot" | Out-File -FilePath $env:GITHUB_ENV -Append
+
+    # - name: Download Prebuilt obs-deps (Windows)
+    #   if: runner.os == 'Windows'
+    #   shell: pwsh
+    #   run: |
+    #     # This script is part of obs-plugintemplate's automation.
+    #     # It reads buildspec.json and fetches the “prebuilt” artifact for windows-x64.
+    #     .github/scripts/Package-Windows.ps1
+    
     - name: Run macOS Build
       if: runner.os == 'macOS'
       shell: zsh --no-rcs --errexit --pipefail {0}
@@ -219,35 +123,6 @@ runs:
 
         .github/scripts/Build-Windows.ps1 @BuildArgs
 
-    # - name: Run Windows Build
-    #   if: runner.os == 'Windows'
-    #   shell: pwsh
-    #   run: |
-    #     .github/scripts/Build-Windows.ps1 -Target x64 -Configuration RelWithDebInfo
-
-    # - name: Run Windows Build
-    #   if: runner.os == 'Windows'
-    #   shell: pwsh
-    #   run: |
-    #     if ($Env:RUNNER_DEBUG) { Set-PSDebug -Trace 1 }
-    #     $BuildArgs = @{
-    #       Target = 'x64'
-    #       Configuration = 'RelWithDebInfo'
-    #     }
-    #     .github/scripts/Build-Windows.ps1 @BuildArgs
-
-    # - name: Run Windows Build
-    #   if: runner.os == 'Windows'
-    #   shell: pwsh
-    #   run: |
-    #     if ($Env:RUNNER_DEBUG) { Set-PSDebug -Trace 1 }
-    #     $BuildArgs = @{
-    #       Target = 'x64'
-    #       Configuration = 'RelWithDebInfo'
-    #     }
-    #     .github/scripts/Build-Windows.ps1 @BuildArgs
-
-  
     - name: Create Summary 📊
       if: contains(fromJSON('["Linux", "macOS"]'),runner.os)
       shell: zsh --no-rcs --errexit --pipefail {0}
