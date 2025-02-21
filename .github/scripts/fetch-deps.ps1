@@ -84,6 +84,14 @@ if (Test-Path $libobsPath) {
 
     # Set the fallback libobs path.
     $fallbackLibobsPath = Join-Path $env:GITHUB_WORKSPACE "libobs_fallback\lib\cmake\libobs"
+
+        # For debugging, list the contents of the fallback libobs directory.
+    Write-Host "Listing fallback libobs directory contents at $fallbackLibobsPath:"
+    if (Test-Path $fallbackLibobsPath) {
+        Get-ChildItem -Path $fallbackLibobsPath -Recurse | Format-List FullName
+    } else {
+        Write-Warning "Fallback libobs directory does not exist."
+    }
     if (Test-Path $fallbackLibobsPath) {
         Write-Host "Fallback build successful. Setting libobs_DIR to $fallbackLibobsPath"
         echo "libobs_DIR=$fallbackLibobsPath" | Out-File -FilePath $env:GITHUB_ENV -Append
