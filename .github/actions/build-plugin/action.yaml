@@ -139,7 +139,7 @@ runs:
         cmake --build build --config Release --target install
 
         # Set the environment variables (convert backslashes to forward slashes to avoid escape issues)
-        $LibobsPath = (Join-Path $env:GITHUB_WORKSPACE "libobs\lib\cmake\libobs") -replace '\\','/'
+        $LibobsPath = (Join-Path $env:GITHUB_WORKSPACE "libobs\lib\cmake\libobs") #-replace '\\','/'
         echo "libobs_DIR=$LibobsPath" | Out-File -FilePath $env:GITHUB_ENV -Append
         echo "LIBOBS_INSTALL_DIR=$LibobsPath" | Out-File -FilePath $env:GITHUB_ENV -Append
 
@@ -154,7 +154,7 @@ runs:
         .\vcpkg\vcpkg install boost-system boost-json rapidjson libobs --overlay-ports=$overlay
         .\vcpkg\vcpkg integrate install
       env:
-        VCPKG_ROOT: ${{ github.workspace }}/vcpkg
+        VCPKG_ROOT: ${{ github.workspace }}\vcpkg
 
         
     - name: Run macOS Build
