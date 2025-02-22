@@ -46,7 +46,7 @@ runs:
         .\vcpkg\bootstrap-vcpkg.bat
 
         # Install the libraries
-        .\vcpkg\vcpkg install boost-system boost-json boost-asio rapidjson
+        .\vcpkg\vcpkg install boost-system boost-json boost-asio boost-beast rapidjson
         .\vcpkg\vcpkg integrate install
 
         # # Manually export VCPKG_ROOT so next steps can see it
