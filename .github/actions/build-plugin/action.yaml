@@ -46,7 +46,7 @@ runs:
         .\vcpkg\bootstrap-vcpkg.bat
 
         # Install the libraries
-        .\vcpkg\vcpkg install boost-system boost-json boost-asio boost-beast rapidjson
+        .\vcpkg\vcpkg install boost-system boost-json boost-asio boost-beast rapidjson qt qt5-base ffmpeg curl x264
         .\vcpkg\vcpkg integrate install
 
         # # Manually export VCPKG_ROOT so next steps can see it
