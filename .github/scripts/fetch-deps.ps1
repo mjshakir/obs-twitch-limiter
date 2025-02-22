@@ -137,10 +137,10 @@ endif()
     }
 
     # Debug: List the contents of the fallback config directories.
-    Write-Host "Listing fallback libobs config directory contents at $fallbackLibobsPath:"
+    Write-Host "Listing fallback libobs config directory contents at $fallbackLibobsPath :"
     Get-ChildItem -Path $fallbackLibobsPath -Recurse | Format-List FullName
 
-    Write-Host "Listing fallback obs-frontend-api config directory contents at $fallbackFrontendApiPath:"
+    Write-Host "Listing fallback obs-frontend-api config directory contents at $fallbackFrontendApiPath :"
     Get-ChildItem -Path $fallbackFrontendApiPath -Recurse | Format-List FullName
 
     # Verify and set environment variables.
