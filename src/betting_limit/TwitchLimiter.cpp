@@ -1,17 +1,12 @@
 #include "TwitchLimiter.hpp"
-#include "eventsub.hpp" // Your C++ EventSub class, also implemented in C++
+#include "eventsub.hpp"
 #include <obs.h>
 #include <obs-module.h>
 #include <obs-properties.h>
 #include <thread>
-#include <regex>
 #include <chrono>
 #include <string>
 
-constexpr size_t DEFAULT_MAX_BET_LIMIT = 5000UL;
-constexpr size_t DEFAULT_BET_TIMEOUT = 30UL;
-constexpr std::string_view DEFAULT_WEBSOCKET_URL = "wss://eventsub.wss.twitch.tv/ws";
-constexpr std::string_view WS_URL_REGEX_PATTERN = R"(^wss:\/\/[a-zA-Z0-9.-]+(:[0-9]+)?\/?.*$)";
 
 // Implementation of the TwitchLimiter singleton
 TwitchLimiter &TwitchLimiter::instance(void)
@@ -23,9 +18,6 @@ TwitchLimiter &TwitchLimiter::instance(void)
 TwitchLimiter::TwitchLimiter(void)
 	: m_initialized(initialize()),
 	  m_custom_bet_limit_enabled(true),
-	  m_max_bet_limit(5000UL),
-	  m_bet_timeout_duration(30UL),
-	  m_websocket_url(std::string(DEFAULT_WEBSOCKET_URL)),
 	  m_io_context(),
 	  m_reconnect_timer(m_io_context),
 	  m_overlay_source(nullptr, &obs_source_release)
@@ -133,23 +125,23 @@ obs_properties_t *TwitchLimiter::get_settings(void *data)
 void TwitchLimiter::update_settings(obs_data_t *settings)
 {
 	m_custom_bet_limit_enabled.store(obs_data_get_bool(settings, "enable_custom_bet_limit"));
-	m_max_bet_limit.store(static_cast<size_t>(obs_data_get_int(settings, "max_bet_limit")));
-	m_bet_timeout_duration.store(static_cast<size_t>(obs_data_get_int(settings, "bet_timeout_duration")));
+	EventSub::instance().set_max_bet_limit(m_custom_bet_limit_enabled.load(),
+					       static_cast<size_t>(obs_data_get_int(settings, "max_bet_limit")));
+	EventSub::instance().set_bet_timeout_duration(
+		static_cast<size_t>(obs_data_get_int(settings, "bet_timeout_duration")));
 
 	const char *new_url = obs_data_get_string(settings, "websocket_url");
-	if (new_url && *new_url)
-		m_websocket_url = std::string(new_url);
-	else
-		m_websocket_url = std::string(DEFAULT_WEBSOCKET_URL);
+	if (new_url && *new_url) {
+		EventSub::instance().set_websocket_url(new_url);
+	} else {
+		EventSub::instance().set_websocket_url();
+	}
 
-	// Pass these settings to EventSub:
-	EventSub::instance().set_max_bet_limit(m_custom_bet_limit_enabled.load() ? m_max_bet_limit.load() : SIZE_MAX);
-	EventSub::instance().set_bet_timeout_duration(m_bet_timeout_duration.load());
-
-	blog(LOG_INFO, "Updated WebSocket URL: %s", m_websocket_url.c_str());
+	blog(LOG_INFO, "Updated WebSocket URL: %s", EventSub::instance().get_websocket_url().c_str());
 	blog(LOG_INFO, "Updated Bet Limit: %s",
-	     m_custom_bet_limit_enabled.load() ? std::to_string(m_max_bet_limit.load()).c_str() : "Disabled");
-	blog(LOG_INFO, "Updated Bet Timeout Duration: %zu seconds", m_bet_timeout_duration.load());
+	     m_custom_bet_limit_enabled.load() ? std::to_string(EventSub::instance().get_max_bet_limit()).c_str()
+					       : "Disabled");
+	blog(LOG_INFO, "Updated Bet Timeout Duration: %zu seconds", EventSub::instance().get_bet_timeout_duration());
 }
 
 // The remaining functions (toggle, reset, etc.) can be implemented similarly
@@ -167,7 +159,7 @@ bool TwitchLimiter::reset_bet_limit(obs_properties_t *props, obs_property_t *pro
 {
 	(void)props;
 	(void)prop;
-	m_max_bet_limit.store(DEFAULT_MAX_BET_LIMIT);
+	EventSub::instance().set_max_bet_limit(DEFAULT_MAX_BET_LIMIT);
 	update_settings(data);
 	blog(LOG_INFO, "Reset Bet Limit to default: %ld", DEFAULT_MAX_BET_LIMIT);
 	return true;
@@ -177,7 +169,7 @@ bool TwitchLimiter::reset_bet_timeout(obs_properties_t *props, obs_property_t *p
 {
 	(void)props;
 	(void)prop;
-	m_bet_timeout_duration.store(DEFAULT_BET_TIMEOUT);
+	EventSub::instance().set_bet_timeout_duration(DEFAULT_BET_TIMEOUT);
 	update_settings(data);
 	blog(LOG_INFO, "Reset Bet Timeout to default: %ld seconds", DEFAULT_BET_TIMEOUT);
 	return true;
@@ -199,8 +191,8 @@ bool TwitchLimiter::reset_websocket_url(obs_properties_t *props, obs_property_t 
 	(void)props;
 	(void)prop;
 	(void)data;
-	m_websocket_url = std::string(DEFAULT_WEBSOCKET_URL);
-	blog(LOG_INFO, "WebSocket URL reset to default: %s", m_websocket_url.c_str());
+	EventSub::instance().set_websocket_url();
+	blog(LOG_INFO, "WebSocket URL reset to default: %s", EventSub::instance().get_websocket_url().c_str());
 	return true;
 }
 
@@ -210,13 +202,8 @@ bool TwitchLimiter::validate_websocket_url(obs_properties_t *props, obs_property
 	(void)prop;
 	const char *new_url = obs_data_get_string(settings, "websocket_url");
 	if (new_url && *new_url) {
-		if (valid_websocket_url(new_url)) {
-			m_websocket_url = std::string(new_url);
-			blog(LOG_INFO, "WebSocket URL updated: %s", m_websocket_url.c_str());
-		} else {
-			blog(LOG_INFO, "Invalid WebSocket URL entered: %s", new_url);
-			obs_data_set_string(settings, "websocket_url", m_websocket_url.c_str());
-		}
+		EventSub::instance().set_websocket_url(new_url);
+		blog(LOG_INFO, "WebSocket URL updated: %s", EventSub::instance().get_websocket_url().c_str());
 	}
 	return true;
 }
@@ -229,12 +216,6 @@ bool TwitchLimiter::reset_overlay(obs_properties_t *props, obs_property_t *prop,
 	hide_overlay_notification();
 	blog(LOG_INFO, "Overlay manually reset by user.");
 	return true;
-}
-
-bool TwitchLimiter::valid_websocket_url(std::string_view url) const
-{
-	static const std::regex ws_regex(WS_URL_REGEX_PATTERN.data());
-	return std::regex_match(url.begin(), url.end(), ws_regex);
 }
 
 void TwitchLimiter::show_overlay_notification(std::string_view message, size_t duration)

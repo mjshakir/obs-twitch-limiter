@@ -1,7 +1,6 @@
 #pragma once
 
 #include <obs-module.h>
-#include <string>
 #include <string_view>
 #include <cstddef>
 #include <atomic>
@@ -18,7 +17,6 @@ public:
 	static TwitchLimiter &instance(void);
 
 	// C++ methods that implement plugin functionality
-	bool initialize(void);
 	void shutdown(void);
 	bool initialized(void) const;
 	obs_properties_t *get_settings(void *data);
@@ -36,7 +34,6 @@ public:
 	void show_overlay_notification(std::string_view message, size_t duration);
 	void hide_overlay_notification(void);
 
-	bool valid_websocket_url(std::string_view url) const;
 	void update_websocket_status(bool connected) const;
 
 protected:
@@ -47,13 +44,12 @@ protected:
 	TwitchLimiter(TwitchLimiter &&) = delete;
 	TwitchLimiter &operator=(TwitchLimiter &&) = delete;
 
+	bool initialize(void);
+
 private:
 	// Member variables for settings, overlay, etc.
 	const bool m_initialized;
 	std::atomic<bool> m_custom_bet_limit_enabled;
-	std::atomic<size_t> m_max_bet_limit;
-	std::atomic<size_t> m_bet_timeout_duration;
-	std::string m_websocket_url;
 	boost::asio::io_context m_io_context;
 	boost::asio::steady_timer m_reconnect_timer;
 	std::optional<boost::asio::executor_work_guard<boost::asio::io_context::executor_type>> m_work_guard;
