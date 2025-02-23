@@ -1,11 +1,14 @@
 #pragma once
 
 #include <cstddef>
+#include <cstdbool>
 #include <functional>
 #include <string>
 #include <string_view>
 #include <atomic>
+#include <memory>
 #include <optional>
+#include <utility>
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/steady_timer.hpp>
@@ -22,7 +25,18 @@ public:
 	void shutdown(void);
 
 	void set_max_bet_limit(const size_t &limit);
+	void set_max_bet_limit(bool enable, const size_t &limit);
+	void set_max_bet_limit(bool enable);
+
 	void set_bet_timeout_duration(const size_t &duration);
+
+	void set_websocket_url(std::string_view url);
+	void set_websocket_url(void);
+
+	size_t get_max_bet_limit(void) const;
+	size_t get_bet_timeout_duration(void) const;
+
+	std::string get_websocket_url(void) const;
 
 	void set_overlay_callback(std::function<void(std::string_view, size_t)> callback);
 	void set_status_callback(std::function<void(bool)> callback);
@@ -32,6 +46,8 @@ protected:
 	~EventSub(void);
 	EventSub(const EventSub &) = delete;
 	EventSub(EventSub &&) = delete;
+	EventSub &operator=(const EventSub &) = delete;
+	EventSub &operator=(EventSub &&) = delete;
 
 	void async_connect(void);
 	void async_listenForBets(void);
@@ -46,10 +62,17 @@ protected:
 
 	void check_connection_status(const boost::system::error_code &ec);
 
+	void safe_increment(void);
+
+	bool valid_websocket_url(std::string_view url) const;
+
+	std::optional<std::pair<std::string, std::string>> parse_websocket_url(std::string_view url) const;
+
 private:
 	std::atomic<bool> m_connected;
 	std::atomic<size_t> m_max_bet_limit, m_bet_timeout_duration, m_reconnect_attempts;
-	std::string m_websocket_url;
+	std::atomic<std::shared_ptr<std::string>> m_websocket_url;
+
 	boost::asio::io_context m_io_context;
 	boost::asio::ip::tcp::resolver m_resolver;
 	boost::beast::websocket::stream<boost::asio::ip::tcp::socket> m_websocket;
