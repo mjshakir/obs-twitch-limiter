@@ -77,7 +77,7 @@ if (Test-Path $libobsPath) {
     $ProjectRoot = Resolve-Path -Path "$PSScriptRoot/../.."
 
     # Set the vcpkg root (if needed for your configuration)
-    $env:VCPKG_ROOT = (Resolve-Path ".\vcpkg").Path
+    $env:VCPKG_ROOT = (Resolve-Path "$env:GITHUB_WORKSPACE\vcpkg").Path
 
     # Define the full path to the vcpkg toolchain file.
     $toolchainFile = Join-Path ${env:VCPKG_ROOT} 'scripts\buildsystems\vcpkg.cmake'
