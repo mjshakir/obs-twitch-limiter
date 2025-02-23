@@ -112,7 +112,7 @@ if (Test-Path $libobsPath) {
 # Compute the installation prefix from the config file location.
 get_filename_component(_INSTALL_PREFIX "${CMAKE_CURRENT_LIST_DIR}/../../.." ABSOLUTE)
 # Instead of using the "include" folder from the install, point to the OBS Studio fallback source for libobs headers.
-set(libobs_INCLUDE_DIRS "${_INSTALL_PREFIX}/../obs-studio-fallback/libobs")
+set(libobs_INCLUDE_DIRS "${_INSTALL_PREFIX}/../obs-studio-fallback/libobs/include")
 set(libobs_LIBRARIES "${_INSTALL_PREFIX}/lib/obs.lib")
 if(NOT TARGET OBS::libobs)
   add_library(OBS::libobs UNKNOWN IMPORTED)
