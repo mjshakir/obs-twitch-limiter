@@ -7,6 +7,9 @@
 #include <chrono>
 #include <string>
 
+constexpr size_t DEFAULT_MAX_BET_LIMIT = 5000UL;
+constexpr size_t DEFAULT_BET_TIMEOUT = 30UL;
+
 
 // Implementation of the TwitchLimiter singleton
 TwitchLimiter &TwitchLimiter::instance(void)
