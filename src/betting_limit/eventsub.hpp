@@ -6,7 +6,6 @@
 #include <string>
 #include <string_view>
 #include <atomic>
-#include <memory>
 #include <optional>
 #include <utility>
 #include <boost/asio/io_context.hpp>
@@ -71,7 +70,7 @@ protected:
 private:
 	std::atomic<bool> m_connected;
 	std::atomic<size_t> m_max_bet_limit, m_bet_timeout_duration, m_reconnect_attempts;
-	std::atomic<std::shared_ptr<std::string>> m_websocket_url;
+	std::string m_websocket_url;
 
 	boost::asio::io_context m_io_context;
 	boost::asio::ip::tcp::resolver m_resolver;

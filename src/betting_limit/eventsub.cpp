@@ -32,7 +32,7 @@ EventSub::EventSub(void)
 	  m_max_bet_limit(DEFAULT_MAX_BET_LIMIT),
 	  m_bet_timeout_duration(DEFAULT_BET_TIMEOUT),
 	  m_reconnect_attempts(0UL),
-	  m_websocket_url(std::make_shared<std::string>(std::string(EVENTSUB_WEBSOCKET_URL))),
+	  m_websocket_url(std::string(EVENTSUB_WEBSOCKET_URL)),
 	  m_io_context(),
 	  m_resolver(m_io_context),
 	  m_websocket(m_io_context),
@@ -101,11 +101,11 @@ void EventSub::set_bet_timeout_duration(const size_t &duration)
 void EventSub::set_websocket_url(std::string_view url)
 {
 	if (url.empty() or !valid_websocket_url(url)) {
-		m_websocket_url.store(std::make_shared<std::string>(std::string(EVENTSUB_WEBSOCKET_URL)));
-		blog(LOG_INFO, "WebSocket URL reset to default: %s", m_websocket_url.load()->c_str());
+		m_websocket_url = std::string(EVENTSUB_WEBSOCKET_URL);
+		blog(LOG_INFO, "WebSocket URL reset to default: %s", m_websocket_url.c_str());
 	} else {
-		m_websocket_url.store(std::make_shared<std::string>(std::string(url)));
-		blog(LOG_INFO, "WebSocket URL updated: %s", m_websocket_url.load()->c_str());
+		m_websocket_url = std::string(url);
+		blog(LOG_INFO, "WebSocket URL updated: %s", m_websocket_url.c_str());
 	}
 
 	// If already connected, reconnect with the new URL
@@ -131,7 +131,7 @@ size_t EventSub::get_bet_timeout_duration(void) const
 
 std::string EventSub::get_websocket_url(void) const
 {
-	return *m_websocket_url.load();
+	return m_websocket_url;
 }
 
 // **🔹 Set OBS Callbacks**
@@ -165,8 +165,8 @@ void EventSub::notify_overlay(std::string_view message, size_t duration) const
 // **🔹 Async WebSocket Connection**
 void EventSub::async_connect(void)
 {
-	if (!valid_websocket_url(m_websocket_url.load())) {
-		blog(LOG_ERROR, "Invalid WebSocket URL: %s. Resetting to default.", m_websocket_url.load().c_str());
+	if (!valid_websocket_url(m_websocket_url)) {
+		blog(LOG_ERROR, "Invalid WebSocket URL: %s. Resetting to default.", m_websocket_url.c_str());
 		set_websocket_url();
 	}
 
@@ -186,9 +186,9 @@ void EventSub::async_connect(void)
 	// Uses `m_reconnect_timer` to delay the connection attempt
 	m_reconnect_timer.expires_after(std::chrono::seconds(delay));
 	m_reconnect_timer.async_wait([this](const boost::system::error_code &) {
-		blog(LOG_INFO, "Resolving WebSocket URL: %s", m_websocket_url.load()->c_str());
+		blog(LOG_INFO, "Resolving WebSocket URL: %s", m_websocket_url.c_str());
 		// Uses `m_resolver` to resolve Twitch's EventSub WebSocket server
-		m_resolver.async_resolve(*m_websocket_url.load(), EVENTSUB_PORT.data(),
+		m_resolver.async_resolve(m_websocket_url, EVENTSUB_PORT.data(),
 					 [this](const boost::system::error_code &ec,
 						boost::asio::ip::tcp::resolver::results_type results) {
 						 if (!ec) {
@@ -228,7 +228,7 @@ void EventSub::handle_connect(const boost::system::error_code &ec)
 		return;
 	}
 
-	auto parsed_url = parse_websocket_url(*m_websocket_url.load());
+	auto parsed_url = parse_websocket_url(m_websocket_url);
 	if (!parsed_url) {
 		blog(LOG_ERROR, "WebSocket connection aborted due to invalid URL.");
 		return;
