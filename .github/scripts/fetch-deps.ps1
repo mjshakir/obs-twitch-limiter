@@ -73,6 +73,9 @@ if (Test-Path $libobsPath) {
 
     Push-Location $obsSourceDir
 
+    $ScriptHome = $PSScriptRoot
+    $ProjectRoot = Resolve-Path -Path "$PSScriptRoot/../.."
+
     # Set the vcpkg root (if needed for your configuration)
     $env:VCPKG_ROOT = (Resolve-Path ".\vcpkg").Path
 
