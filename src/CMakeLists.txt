@@ -34,8 +34,10 @@ target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_
 # Find and configure dependencies
 if(WIN32)
   # On Windows use the CONFIG mode targets (provided by OBS‑deps / vcpkg)
+  add_subdirectory(deps/obs-studio)
   find_package(Boost REQUIRED COMPONENTS json system CONFIG)
   find_package(RapidJSON CONFIG REQUIRED)
+  
 else()
   find_package(Boost REQUIRED json system)
   find_package(RapidJSON REQUIRED)
@@ -60,6 +62,7 @@ endif()
 if(libobs_FOUND)
   include_directories(${libobs_INCLUDE_DIRS})
 endif()
+
 
 if(obs-frontend-api_FOUND)
   include_directories(${obs-frontend-api_INCLUDE_DIRS})
