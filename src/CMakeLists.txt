@@ -11,7 +11,6 @@ set(CMAKE_C_STANDARD_REQUIRED ON)
 target_sources(
   ${CMAKE_PROJECT_NAME}
   PRIVATE
-    plugin-main.c
     betting_limit/TwitchLimiterWrapper.c # Compiled as C
     betting_limit/TwitchLimiterWrapper.cpp # Compiled as C++
     betting_limit/TwitchLimiter.cpp
