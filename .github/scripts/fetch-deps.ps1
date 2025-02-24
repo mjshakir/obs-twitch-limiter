@@ -7,7 +7,17 @@ $ErrorActionPreference = "Stop"
 # 1. Locate and read buildspec.json from the repo root.
 #    (Assumes this script is in .github\scripts and buildspec.json is in the repository root.)
 # -------------------------------------------------------------------
+if (-not $PSScriptRoot) {
+    $PSScriptRoot = Split-Path -Path $MyInvocation.MyCommand.Definition -Parent
+}
+
 $buildspecPath = Join-Path $PSScriptRoot "../../buildspec.json"
+
+Write-Host "PSScriptRoot: $PSScriptRoot"
+Write-Host "GITHUB_WORKSPACE: $($env:GITHUB_WORKSPACE)"
+
+$destination = Join-Path $PSScriptRoot "../../dependencies/prebuilt"
+
 if (!(Test-Path $buildspecPath)) {
     Write-Error "buildspec.json not found at $buildspecPath"
     exit 1
