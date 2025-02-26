@@ -8,11 +8,12 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
-# Set the vcpkg root (adjust if necessary)
+#Set the vcpkg root (adjust if necessary)
 $env:VCPKG_ROOT = (Resolve-Path ".\vcpkg").Path
 
 # Define the full path to the vcpkg toolchain file
 $toolchainFile = Join-Path ${env:VCPKG_ROOT} 'scripts\buildsystems\vcpkg.cmake'
+
 
 if ( $DebugPreference -eq 'Continue' ) {
     $VerbosePreference = 'Continue'
@@ -53,16 +54,14 @@ function Build {
     Push-Location -Stack BuildTemp
     Ensure-Location $ProjectRoot
 
-    # Get the path to the prebuilt dependencies
-    $libobsPath = "$env:GITHUB_WORKSPACE\libobs_fallback\lib\cmake\libobs"
-    $frontendApiPath = "$env:GITHUB_WORKSPACE\libobs_fallback\lib\cmake\obs-frontend-api"
-    
-    # Build arguments for CMake
+    # $CmakeArgs = @('--preset', "windows-ci-${Target}")
+    # $CmakeArgs = @(
+    #     '--preset', "windows-ci-${Target}",
+    #     '-DCMAKE_TOOLCHAIN_FILE=' + (Join-Path ${env:VCPKG_ROOT} 'scripts\buildsystems\vcpkg.cmake')
+    # )
     $CmakeArgs = @(
         '--preset', "windows-ci-${Target}",
-        "-DCMAKE_TOOLCHAIN_FILE=${toolchainFile}",
-        "-Dlibobs_DIR=${libobsPath}",
-        "-Dobs-frontend-api_DIR=${frontendApiPath}"
+        "-DCMAKE_TOOLCHAIN_FILE=${toolchainFile}"
     )
 
     $CmakeBuildArgs = @('--build')
@@ -87,13 +86,13 @@ function Build {
         '--config', $Configuration
     )
 
-    Log-Group "Configuring Product..."
+    Log-Group "Configuring ${ProductName}..."
     Invoke-External cmake @CmakeArgs
 
-    Log-Group "Building Product..."
+    Log-Group "Building ${ProductName}..."
     Invoke-External cmake @CmakeBuildArgs
 
-    Log-Group "Installing Product..."
+    Log-Group "Installing ${ProductName}..."
     Invoke-External cmake @CmakeInstallArgs
 
     Pop-Location -Stack BuildTemp

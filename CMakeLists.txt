@@ -16,6 +16,9 @@ add_library(${CMAKE_PROJECT_NAME} MODULE)
 find_package(libobs REQUIRED)
 target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE OBS::libobs)
 
+# Include betting_limit
+add_subdirectory(src)
+
 if(ENABLE_FRONTEND_API)
   find_package(obs-frontend-api REQUIRED)
   target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE OBS::obs-frontend-api)
@@ -33,9 +36,6 @@ if(ENABLE_QT)
     PROPERTIES AUTOMOC ON AUTOUIC ON AUTORCC ON
   )
 endif()
-
-# Include betting_limit
-add_subdirectory(src)
 
 target_sources(${CMAKE_PROJECT_NAME} PRIVATE src/plugin-main.c)
 
