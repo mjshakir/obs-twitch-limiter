@@ -99,7 +99,8 @@ else {
     cmake -B build -A x64 -DCMAKE_TOOLCHAIN_FILE="$toolchainFile" -DCMAKE_PREFIX_PATH="$env:GITHUB_WORKSPACE/dependencies/prebuilt/windows-deps-$($dep.version)-x64" -DCMAKE_INSTALL_PREFIX="$env:GITHUB_WORKSPACE\libobs_fallback" -DCMAKE_INSTALL_INCLUDEDIR="$env:GITHUB_WORKSPACE\libobs_fallback\include" -DCMAKE_INSTALL_LIBDIR="lib/cmake/libobs" -DUthash_INCLUDE_DIR="$uthashInclude" -DCMAKE_BUILD_TYPE=Release -DBUILD_BROWSER=OFF -DBUILD_OBSCONTROL=OFF -DENABLE_FRONTEND_API=ON
 
     # Build and install OBS Studio (or at least the necessary parts) using the new --install syntax.
-    cmake --install build --config Release
+    cmake --build build --config Release --target install
+    
     Pop-Location
 
     # Define fallback config directories.
