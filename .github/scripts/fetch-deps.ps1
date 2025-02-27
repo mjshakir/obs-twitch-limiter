@@ -96,7 +96,7 @@ else {
     $uthashInclude = "$env:GITHUB_WORKSPACE/dependencies/prebuilt/include"
 
     # Configure CMake with flags to install libobs and enable the frontend API.
-    cmake -B build -A x64 -DCMAKE_TOOLCHAIN_FILE="$toolchainFile" -DCMAKE_PREFIX_PATH="$env:GITHUB_WORKSPACE/dependencies/prebuilt/windows-deps-$($dep.version)-x64" -DCMAKE_INSTALL_PREFIX="$env:GITHUB_WORKSPACE\libobs_fallback" -DCMAKE_INSTALL_INCLUDEDIR="$env:GITHUB_WORKSPACE\libobs_fallback\include" -DCMAKE_INSTALL_LIBDIR="lib/cmake/libobs" -DUthash_INCLUDE_DIR="$uthashInclude" -DCMAKE_BUILD_TYPE=Release -DBUILD_BROWSER=OFF -DBUILD_OBSCONTROL=OFF -DENABLE_AJA=OFF -DENABLE_AMF=OFF -DENABLE_FRONTEND_API=ON
+    cmake -B build -A x64 -DCMAKE_TOOLCHAIN_FILE="$toolchainFile" -DCMAKE_PREFIX_PATH="$env:GITHUB_WORKSPACE/dependencies/prebuilt/windows-deps-$($dep.version)-x64" -DCMAKE_INSTALL_PREFIX="$env:GITHUB_WORKSPACE\libobs_fallback" -DCMAKE_INSTALL_INCLUDEDIR="$env:GITHUB_WORKSPACE\libobs_fallback\include" -DCMAKE_INSTALL_LIBDIR="lib/cmake/libobs" -DUthash_INCLUDE_DIR="$uthashInclude" -DCMAKE_BUILD_TYPE=Release -DBUILD_BROWSER=OFF -DBUILD_OBSCONTROL=OFF -DENABLE_AJA=OFF -DENABLE_AMF=OFF -DAMF_INCLUDE_DIR="" -DENABLE_FRONTEND_API=ON
 
     # Build and install OBS Studio (or at least the necessary parts) using the new --install syntax.
     cmake --build build --config Release #--target install
