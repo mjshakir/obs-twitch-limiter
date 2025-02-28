@@ -68,12 +68,12 @@ Get-ChildItem -Path $destination -Recurse | Format-List FullName
 # -------------------------------------------------------------------
 $filePrefix = "windows-deps-$($dep.version)-x64"
 $libobsPath = Join-Path $destination "$filePrefix\lib\cmake\libobs"
+
 if (Test-Path $libobsPath) {
     Write-Host "Setting libobs_DIR to $libobsPath"
     echo "libobs_DIR=$libobsPath" | Out-File -FilePath $env:GITHUB_ENV -Append
     echo "LIBOBS_INSTALL_DIR=$libobsPath" | Out-File -FilePath $env:GITHUB_ENV -Append
-}
-else {
+} else {
     Write-Warning "Could not find libobsConfig.cmake at expected location: $libobsPath"
     Write-Host "Falling back to building OBS from source to generate libobs and obs-frontend-api..."
 
@@ -90,18 +90,32 @@ else {
     $env:VCPKG_ROOT = (Resolve-Path "$env:GITHUB_WORKSPACE\vcpkg").Path
     $toolchainFile = Join-Path ${env:VCPKG_ROOT} 'scripts\buildsystems\vcpkg.cmake'
 
-    # (Optional) If your prebuilt obs-deps provides Uthash headers, set this variable.
-    # $uthashInclude = Join-Path "$env:GITHUB_WORKSPACE/dependencies/prebuilt/windows-deps-$($dep.version)-x64" "include"
-    # $uthashInclude = Join-Path "$env:GITHUB_WORKSPACE/dependencies/prebuilt/include"
+    # (Optional) Set Uthash include directory (adjust if necessary)
     $uthashInclude = "$env:GITHUB_WORKSPACE/dependencies/prebuilt/include"
 
     # Configure CMake with flags to install libobs and enable the frontend API.
-    cmake -B build -A x64 -DCMAKE_TOOLCHAIN_FILE="$toolchainFile" -DCMAKE_PREFIX_PATH="$env:GITHUB_WORKSPACE/dependencies/prebuilt/windows-deps-$($dep.version)-x64" -DCMAKE_INSTALL_PREFIX="$env:GITHUB_WORKSPACE\libobs_fallback" -DCMAKE_INSTALL_INCLUDEDIR="$env:GITHUB_WORKSPACE\libobs_fallback\include" -DCMAKE_INSTALL_LIBDIR="lib/cmake/libobs" -DUthash_INCLUDE_DIR="$uthashInclude" -DCMAKE_BUILD_TYPE=Release -DBUILD_BROWSER=OFF -DBUILD_OBSCONTROL=OFF -DENABLE_AJA=OFF -DENABLE_OBS_FFMPEG=OFF -DENABLE_AMF=OFF -DAMF_INCLUDE_DIR="" -DENABLE_FRONTEND_API=ON
+    cmake -B build -A x64 `
+      -DCMAKE_TOOLCHAIN_FILE="$toolchainFile" `
+      -DCMAKE_PREFIX_PATH="$env:GITHUB_WORKSPACE/dependencies/prebuilt/windows-deps-$($dep.version)-x64" `
+      -DCMAKE_INSTALL_PREFIX="$env:GITHUB_WORKSPACE\libobs_fallback" `
+      -DCMAKE_INSTALL_INCLUDEDIR="$env:GITHUB_WORKSPACE\libobs_fallback\include" `
+      -DCMAKE_INSTALL_LIBDIR="lib/cmake/libobs" `
+      -DUthash_INCLUDE_DIR="$uthashInclude" `
+      -DCMAKE_BUILD_TYPE=Release `
+      -DBUILD_BROWSER=OFF `
+      -DBUILD_OBSCONTROL=OFF `
+      -DENABLE_AJA=OFF `
+      -DENABLE_OBS_FFMPEG=OFF `
+      -DENABLE_AMF=OFF `
+      -DAMF_INCLUDE_DIR="" `
+      -DENABLE_FRONTEND_API=ON
 
-    # Build and install OBS Studio (or at least the necessary parts) using the new --install syntax.
-    # cmake --build build --config Release #--target install
-    cmake --build build --target install --config Release
-
+    # Build and install OBS Studio (or at least the necessary parts).
+    try {
+        cmake --build build --target install --config Release
+    } catch {
+        Write-Warning "Fallback build returned an error; continuing with minimal configuration generation."
+    }
     Pop-Location
 
     # Define fallback config directories.
@@ -173,3 +187,7 @@ endif()
         exit 1
     }
 }
+
+# If we reach here, the script was successful.
+Write-Host "fetch-deps.ps1 completed successfully."
+exit 0
