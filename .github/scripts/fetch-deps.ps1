@@ -100,7 +100,7 @@ else {
 
     # Build and install OBS Studio (or at least the necessary parts) using the new --install syntax.
     # cmake --build build --config Release #--target install
-    cmake --install build --config Release
+    cmake --build build --target install --config Release
 
     Pop-Location
 
