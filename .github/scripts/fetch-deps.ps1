@@ -76,21 +76,24 @@ if (Test-Path $libobsPath) {
 } else {
     Write-Warning "Could not find libobsConfig.cmake at expected location: $libobsPath"
     Write-Host "Falling back to building OBS from source to generate libobs and obs-frontend-api..."
+    
 
-    # Define a folder for the fallback OBS build.
+    # --- 5a. Set the fallback flag so later steps know the fallback was used.
+    echo "USE_FALLBACK_LIBOBS=ON" | Out-File -FilePath $env:GITHUB_ENV -Append
+    Write-Host "Setting USE_FALLBACK_LIBOBS=ON"
+    
+    # --- 5b. Clone the OBS Studio repository into a fallback folder.
     $obsSourceDir = Join-Path $env:GITHUB_WORKSPACE "obs-studio-fallback"
-
-    # Clone the OBS Studio repository into the fallback folder.
     git clone --recursive https://github.com/obsproject/obs-studio.git $obsSourceDir
     Push-Location $obsSourceDir
 
     $ProjectRoot = Resolve-Path -Path "$PSScriptRoot/../.."
 
-    # Set the vcpkg root (if needed for your configuration)
+    # --- 5c. Set the vcpkg toolchain.
     $env:VCPKG_ROOT = (Resolve-Path "$env:GITHUB_WORKSPACE\vcpkg").Path
     $toolchainFile = Join-Path ${env:VCPKG_ROOT} 'scripts\buildsystems\vcpkg.cmake'
 
-    # (Optional) Set Uthash include directory (adjust if necessary)
+    # --- 5d. (Optional) Define the Uthash include directory if needed.
     $uthashInclude = "$env:GITHUB_WORKSPACE/dependencies/prebuilt/include"
 
     # Configure CMake with flags to install libobs and enable the frontend API.

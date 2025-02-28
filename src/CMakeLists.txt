@@ -7,6 +7,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_C_STANDARD 17) # Ensure C files are compiled with C17
 set(CMAKE_C_STANDARD_REQUIRED ON)
 
+option(USE_FALLBACK_LIBOBS "Use prebuilt/fallback libobs instead of adding OBS Studio subdirectory" OFF)
+
 # Add custom plugin source files
 target_sources(
   ${CMAKE_PROJECT_NAME}
@@ -34,7 +36,12 @@ target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_
 # Find and configure dependencies
 if(WIN32)
   # On Windows use the CONFIG mode targets (provided by OBS‑deps / vcpkg)
-  add_subdirectory(deps/obs-studio)
+  if(NOT USE_FALLBACK_LIBOBS)
+    add_subdirectory(deps/obs-studio)
+  else()
+    find_package(libobs REQUIRED)
+    find_package(obs-frontend-api REQUIRED)
+  endif()
   find_package(Boost REQUIRED COMPONENTS json system CONFIG)
   find_package(RapidJSON CONFIG REQUIRED)
 else()
