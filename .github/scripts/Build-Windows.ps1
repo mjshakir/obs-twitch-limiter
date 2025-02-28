@@ -12,7 +12,9 @@ $ErrorActionPreference = 'Stop'
 $env:VCPKG_ROOT = (Resolve-Path ".\vcpkg").Path
 
 # Define the full path to the vcpkg toolchain file
-$toolchainFile = Join-Path ${env:VCPKG_ROOT} 'scripts\buildsystems\vcpkg.cmake'
+# $toolchainFile = Join-Path ${env:VCPKG_ROOT} 'scripts\buildsystems\vcpkg.cmake'
+
+$env:CMAKE_TOOLCHAIN_FILE = Join-Path $env:VCPKG_ROOT "scripts\buildsystems\vcpkg.cmake"
 
 
 if ( $DebugPreference -eq 'Continue' ) {
@@ -59,9 +61,16 @@ function Build {
     #     '--preset', "windows-ci-${Target}",
     #     '-DCMAKE_TOOLCHAIN_FILE=' + (Join-Path ${env:VCPKG_ROOT} 'scripts\buildsystems\vcpkg.cmake')
     # )
-    $CmakeArgs = @(
-        '--preset', "windows-ci-${Target}",
-        "-DCMAKE_TOOLCHAIN_FILE=${toolchainFile}"
+    # $CmakeArgs = @(
+    #     '--preset', "windows-ci-${Target}",
+    #     "-DCMAKE_TOOLCHAIN_FILE=${toolchainFile}"
+    # )
+
+    $CmakeArgs += @(
+        '-DCMAKE_TOOLCHAIN_FILE=' + $env:CMAKE_TOOLCHAIN_FILE,
+        '-DCMAKE_PREFIX_PATH=' + (Join-Path $ProjectRoot "dependencies\prebuilt\windows-deps-$($buildSpec.dependencies.prebuilt.version)-x64"),
+        '-Dlibobs_DIR=' + (Join-Path $ProjectRoot "dependencies\prebuilt\windows-deps-$($buildSpec.dependencies.prebuilt.version)-x64\lib\cmake\libobs"),
+        '-Dobs-frontend-api_DIR=' + (Join-Path $ProjectRoot "dependencies\prebuilt\windows-deps-$($buildSpec.dependencies.prebuilt.version)-x64\lib\cmake\obs-frontend-api")
     )
 
     $CmakeBuildArgs = @('--build')
