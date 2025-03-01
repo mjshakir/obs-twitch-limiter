@@ -66,11 +66,13 @@ function Build {
     #     "-DCMAKE_TOOLCHAIN_FILE=${toolchainFile}"
     # )
 
-    $CmakeArgs += @(
-        '-DCMAKE_TOOLCHAIN_FILE=' + $env:CMAKE_TOOLCHAIN_FILE,
-        '-DCMAKE_PREFIX_PATH=' + (Join-Path $ProjectRoot "dependencies\prebuilt\windows-deps-$($buildSpec.dependencies.prebuilt.version)-x64"),
-        '-Dlibobs_DIR=' + (Join-Path $ProjectRoot "dependencies\prebuilt\windows-deps-$($buildSpec.dependencies.prebuilt.version)-x64\lib\cmake\libobs"),
-        '-Dobs-frontend-api_DIR=' + (Join-Path $ProjectRoot "dependencies\prebuilt\windows-deps-$($buildSpec.dependencies.prebuilt.version)-x64\lib\cmake\obs-frontend-api")
+    # At the configuration step:
+    $CmakeArgs = @(
+        '--preset', "windows-ci-${Target}",
+        "-DCMAKE_TOOLCHAIN_FILE=${env:CMAKE_TOOLCHAIN_FILE}",
+        "-DCMAKE_PREFIX_PATH=${DepsPath}",
+        "-Dlibobs_DIR=${LibObsPath}",
+        "-Dobs-frontend-api_DIR=${FrontendApiPath}"
     )
 
     $CmakeBuildArgs = @('--build')
