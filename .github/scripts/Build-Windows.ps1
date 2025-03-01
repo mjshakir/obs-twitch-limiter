@@ -8,33 +8,6 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
-#Set the vcpkg root (adjust if necessary)
-$env:VCPKG_ROOT = (Resolve-Path ".\vcpkg").Path
-
-# Define the full path to the vcpkg toolchain file
-# $toolchainFile = Join-Path ${env:VCPKG_ROOT} 'scripts\buildsystems\vcpkg.cmake'
-
-$env:CMAKE_TOOLCHAIN_FILE = Join-Path $env:VCPKG_ROOT "scripts\buildsystems\vcpkg.cmake"
-
-
-if ( $DebugPreference -eq 'Continue' ) {
-    $VerbosePreference = 'Continue'
-    $InformationPreference = 'Continue'
-}
-
-if ( $env:CI -eq $null ) {
-    throw "Build-Windows.ps1 requires CI environment"
-}
-
-if ( ! ( [System.Environment]::Is64BitOperatingSystem ) ) {
-    throw "A 64-bit system is required to build the project."
-}
-
-if ( $PSVersionTable.PSVersion -lt '7.2.0' ) {
-    Write-Warning 'The obs-studio PowerShell build script requires PowerShell Core 7. Install or upgrade your PowerShell version: https://aka.ms/pscore6'
-    exit 2
-}
-
 function Build {
     $ProjectRoot = Resolve-Path -Path "$PSScriptRoot/../.."
     $BuildDir = "${ProjectRoot}/build_x64"
@@ -47,6 +20,7 @@ function Build {
     # Read the dependency version from buildspec
     $BuildSpec = Get-Content -Path "${ProjectRoot}/buildspec.json" -Raw | ConvertFrom-Json
     $DepsVersion = $BuildSpec.dependencies.prebuilt.version
+    $ProductName = $BuildSpec.name
     
     # Determine correct paths for dependencies
     $DepsPath = "${ProjectRoot}/dependencies/prebuilt/windows-deps-${DepsVersion}-x64"
@@ -59,7 +33,8 @@ function Build {
     Write-Host "  frontend-api: $FrontendApiPath"
     
     # Ensure vcpkg toolchain path is correct
-    $VcpkgToolchain = Join-Path ${Env:VCPKG_ROOT} 'scripts/buildsystems/vcpkg.cmake'
+    $VcpkgRoot = (Resolve-Path ".\vcpkg").Path
+    $VcpkgToolchain = Join-Path $VcpkgRoot 'scripts/buildsystems/vcpkg.cmake'
     
     # Build with direct paths
     $CmakeArgs = @(
@@ -77,7 +52,7 @@ function Build {
     )
     
     Write-Host "Configuring with CMake..."
-    Write-Host "CMake args: $CmakeArgs"
+    Write-Host "CMake args: $($CmakeArgs -join ' ')"
     & cmake @CmakeArgs
     
     if ($LASTEXITCODE -ne 0) {
