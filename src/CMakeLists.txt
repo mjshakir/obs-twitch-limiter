@@ -35,6 +35,7 @@ target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_
 
 # Find and configure dependencies
 if(WIN32)
+  set(libobs_DIR ${CMAKE_SOURCE_DIR}/.deps/cmake)
   find_package(libobs REQUIRED CONFIG)
   find_package(obs-frontend-api REQUIRED CONFIG)
   find_package(Boost REQUIRED COMPONENTS json system CONFIG)
