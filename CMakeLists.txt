@@ -1,5 +1,12 @@
 cmake_minimum_required(VERSION 3.28...3.30)
 
+if(WIN32)
+  option(SKIP_DEPENDENCY_RESOLUTION "Skip the automatic dependency resolution" ON)
+  if(SKIP_DEPENDENCY_RESOLUTION)
+    set(BUILD_OBS OFF CACHE BOOL "Skip building OBS" FORCE)
+  endif()
+endif()
+
 include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/common/bootstrap.cmake" NO_POLICY_SCOPE)
 
 project(${_name} VERSION ${_version})
@@ -10,13 +17,6 @@ option(ENABLE_QT "Use Qt functionality" OFF)
 include(compilerconfig)
 include(defaults)
 include(helpers)
-
-# Add at the top of your CMakeLists.txt, before any includes
-option(SKIP_DEPENDENCY_RESOLUTION "Skip the automatic dependency resolution" OFF)
-if(SKIP_DEPENDENCY_RESOLUTION)
-  # We'll handle dependencies directly with explicit paths
-  set(BUILD_OBS OFF CACHE BOOL "Skip building OBS" FORCE)
-endif()
 
 # set(libobs_DIR ${CMAKE_SOURCE_DIR}/.deps/cmake)
 
