@@ -18,9 +18,9 @@ include(compilerconfig)
 include(defaults)
 include(helpers)
 
-# set(libobs_DIR ${CMAKE_SOURCE_DIR}/.deps/cmake)
-
 add_library(${CMAKE_PROJECT_NAME} MODULE)
+
+set(libobs_DIR ${CMAKE_SOURCE_DIR}/.deps/cmake)
 
 find_package(libobs REQUIRED)
 target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE OBS::libobs)
