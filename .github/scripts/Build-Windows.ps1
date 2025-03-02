@@ -26,15 +26,20 @@ function Build {
     $DepsPath = "${ProjectRoot}/dependencies/prebuilt/windows-deps-${DepsVersion}-x64"
     $LibObsPath = "${DepsPath}/lib/cmake/libobs"
     $FrontendApiPath = "${DepsPath}/lib/cmake/obs-frontend-api"
+    $W32PthreadsPath = "${DepsPath}/lib/cmake/w32-pthreads"
     
     Write-Host "Using dependency paths:"
     Write-Host "  Dependencies: $DepsPath"
     Write-Host "  libobs: $LibObsPath"
     Write-Host "  frontend-api: $FrontendApiPath"
+    Write-Host "  w32-pthreads: $W32PthreadsPath"
     
     # Ensure vcpkg toolchain path is correct
     $VcpkgRoot = (Resolve-Path ".\vcpkg").Path
     $VcpkgToolchain = Join-Path $VcpkgRoot 'scripts/buildsystems/vcpkg.cmake'
+    
+    # Add binaries to path so that DLLs can be found
+    $env:PATH = "$DepsPath\bin;$env:PATH"
     
     # Build with direct paths
     $CmakeArgs = @(
@@ -44,11 +49,13 @@ function Build {
         "-A", "x64",
         "-DCMAKE_TOOLCHAIN_FILE=${VcpkgToolchain}",
         "-DCMAKE_PREFIX_PATH=${DepsPath}",
+        "-DSKIP_DEPENDENCY_RESOLUTION=ON",
         "-DENABLE_FRONTEND_API=ON",
         "-DENABLE_QT=ON",
         "-Dlibobs_DIR=${LibObsPath}",
         "-Dobs-frontend-api_DIR=${FrontendApiPath}",
-        "-DSKIP_DEPENDENCY_RESOLUTION=ON"
+        "-Dw32-pthreads_DIR=${W32PthreadsPath}",
+        "-DOBS_WEBRTC_ENABLED=OFF"
     )
     
     Write-Host "Configuring with CMake..."
