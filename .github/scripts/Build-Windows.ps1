@@ -22,26 +22,46 @@ function Build {
     $DepsVersion = $BuildSpec.dependencies.prebuilt.version
     $ProductName = $BuildSpec.name
     
-    # Use the environment variables if they exist, otherwise construct the paths
-    $LibObsPath = if ($env:libobs_DIR) { $env:libobs_DIR } else {
-        Join-Path -Path $ProjectRoot -ChildPath "dependencies\prebuilt\windows-deps-${DepsVersion}-x64\lib\cmake\libobs"
+    # Determine correct paths for dependencies
+    $DepsPath = "${ProjectRoot}/dependencies/prebuilt/windows-deps-${DepsVersion}-x64"
+    
+    # Check environment variables using a different approach due to hyphens
+    # Using Get-Item to safely access environment variables with hyphens
+    $LibObsPath = ""
+    try {
+        # Try to get from environment variable if it exists
+        $LibObsPath = (Get-Item "env:libobs_DIR" -ErrorAction SilentlyContinue).Value
+    } catch {
+        # If it fails, use the constructed path
     }
     
-    $FrontendApiPath = if ($env:obs-frontend-api_DIR) { $env:obs-frontend-api_DIR } else {
-        Join-Path -Path $ProjectRoot -ChildPath "dependencies\prebuilt\windows-deps-${DepsVersion}-x64\lib\cmake\obs-frontend-api"
+    if ([string]::IsNullOrEmpty($LibObsPath)) {
+        $LibObsPath = "${DepsPath}/lib/cmake/libobs"
     }
     
-    $W32PthreadsPath = if ($env:w32-pthreads_DIR) { $env:w32-pthreads_DIR } else {
-        Join-Path -Path $ProjectRoot -ChildPath "dependencies\prebuilt\windows-deps-${DepsVersion}-x64\lib\cmake\w32-pthreads"
+    $FrontendApiPath = ""
+    try {
+        # Using single quotes to treat the entire name as a literal string
+        $FrontendApiPath = (Get-Item 'env:obs-frontend-api_DIR' -ErrorAction SilentlyContinue).Value
+    } catch {
+        # If it fails, use the constructed path
     }
     
-    $DepsPath = Join-Path -Path $ProjectRoot -ChildPath "dependencies\prebuilt\windows-deps-${DepsVersion}-x64"
+    if ([string]::IsNullOrEmpty($FrontendApiPath)) {
+        $FrontendApiPath = "${DepsPath}/lib/cmake/obs-frontend-api"
+    }
     
-    Write-Host "Using dependency paths:"
-    Write-Host "  Dependencies: $DepsPath"
-    Write-Host "  libobs: $LibObsPath"
-    Write-Host "  frontend-api: $FrontendApiPath" 
-    Write-Host "  w32-pthreads: $W32PthreadsPath"
+    $W32PthreadsPath = ""
+    try {
+        # Using single quotes to treat the entire name as a literal string
+        $W32PthreadsPath = (Get-Item 'env:w32-pthreads_DIR' -ErrorAction SilentlyContinue).Value
+    } catch {
+        # If it fails, use the constructed path
+    }
+    
+    if ([string]::IsNullOrEmpty($W32PthreadsPath)) {
+        $W32PthreadsPath = "${DepsPath}/lib/cmake/w32-pthreads"
+    }
     
     # Ensure vcpkg toolchain path is correct
     $VcpkgRoot = (Resolve-Path ".\vcpkg").Path
@@ -49,14 +69,21 @@ function Build {
     
     # Add binaries to path so that DLLs can be found
     $env:PATH = "$DepsPath\bin;$env:PATH"
-    
+
     # Convert paths to use forward slashes for CMake
     $DepsPathCMake = $DepsPath.Replace('\', '/')
     $LibObsPathCMake = $LibObsPath.Replace('\', '/')
     $FrontendApiPathCMake = $FrontendApiPath.Replace('\', '/')
     $W32PthreadsPathCMake = $W32PthreadsPath.Replace('\', '/')
     $VcpkgToolchainCMake = $VcpkgToolchain.Replace('\', '/')
-    
+
+    Write-Host "Using dependency paths:"
+    Write-Host "  Dependencies: $DepsPathCMake"
+    Write-Host "  libobs: $LibObsPathCMake"
+    Write-Host "  frontend-api: $FrontendApiPathCMake"
+    Write-Host "  w32-pthreads: $W32PthreadsPathCMake"
+    Write-Host "  Vcpkg toolchain: $VcpkgToolchainCMake"
+
     # Build with direct paths
     $CmakeArgs = @(
         "-S", "${ProjectRoot}",
