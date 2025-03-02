@@ -23,10 +23,13 @@ function Build {
     $ProductName = $BuildSpec.name
     
     # Determine correct paths for dependencies
-    $DepsPath = "${ProjectRoot}/dependencies/prebuilt/windows-deps-${DepsVersion}-x64"
-    $LibObsPath = "${DepsPath}/lib/cmake/libobs"
-    $FrontendApiPath = "${DepsPath}/lib/cmake/obs-frontend-api"
-    $W32PthreadsPath = "${DepsPath}/lib/cmake/w32-pthreads"
+    $DepsPath = Join-Path -Path $ProjectRoot -ChildPath "dependencies\prebuilt\windows-deps-${DepsVersion}-x64"
+    $LibObsPath = Join-Path -Path $DepsPath -ChildPath "lib\cmake\libobs"
+    $FrontendApiPath = Join-Path -Path $DepsPath -ChildPath "lib\cmake\obs-frontend-api"
+    $W32PthreadsPath = Join-Path -Path $DepsPath -ChildPath "lib\cmake\w32-pthreads"
+
+    # When passing to CMake, normalize path with forward slashes
+    $DepsPathCMake = $DepsPath.Replace('\', '/')
     
     Write-Host "Using dependency paths:"
     Write-Host "  Dependencies: $DepsPath"
@@ -48,13 +51,13 @@ function Build {
         "-G", "Visual Studio 17 2022",
         "-A", "x64",
         "-DCMAKE_TOOLCHAIN_FILE=${VcpkgToolchain}",
-        "-DCMAKE_PREFIX_PATH=${DepsPath}",
+        "-DCMAKE_PREFIX_PATH=${DepsPathCMake}",
         "-DSKIP_DEPENDENCY_RESOLUTION=ON",
         "-DENABLE_FRONTEND_API=ON",
         "-DENABLE_QT=ON",
-        "-Dlibobs_DIR=${LibObsPath}",
-        "-Dobs-frontend-api_DIR=${FrontendApiPath}",
-        "-Dw32-pthreads_DIR=${W32PthreadsPath}",
+        "-Dlibobs_DIR=${LibObsPath.Replace('\', '/')}",
+        "-Dobs-frontend-api_DIR=${FrontendApiPath.Replace('\', '/')}",
+        "-Dw32-pthreads_DIR=${W32PthreadsPath.Replace('\', '/')}",
         "-DOBS_WEBRTC_ENABLED=OFF"
     )
     
