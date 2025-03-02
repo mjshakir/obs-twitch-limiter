@@ -46,7 +46,7 @@ runs:
         .\vcpkg\bootstrap-vcpkg.bat
 
         # Install the libraries
-        .\vcpkg\vcpkg install boost-system boost-json boost-asio boost-beast rapidjson ffmpeg zlib uthash qt curl x264 jansson mbedtls
+        .\vcpkg\vcpkg install boost-system boost-json boost-asio boost-beast rapidjson ffmpeg zlib uthash qt curl x264 jansson mbedtls pthreads
         .\vcpkg\vcpkg integrate install
 
       env:
