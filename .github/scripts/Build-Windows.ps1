@@ -22,55 +22,45 @@ function Build {
     $DepsVersion = $BuildSpec.dependencies.prebuilt.version
     $ProductName = $BuildSpec.name
     
-    # Determine correct paths for dependencies
-    $DepsPath = "${ProjectRoot}/dependencies/prebuilt/windows-deps-${DepsVersion}-x64"
-    
-    # Check environment variables using a different approach due to hyphens
-    # Using Get-Item to safely access environment variables with hyphens
-    $LibObsPath = ""
-    try {
-        # Try to get from environment variable if it exists
-        $LibObsPath = (Get-Item "env:libobs_DIR" -ErrorAction SilentlyContinue).Value
-    } catch {
-        # If it fails, use the constructed path
+    # Use the environment variables if they exist, otherwise construct the paths
+    # PowerShell requires special syntax for environment variables with hyphens
+    $LibObsPath = if ($env:libobs_DIR) { 
+        $env:libobs_DIR 
+    } else {
+        Join-Path -Path $ProjectRoot -ChildPath "dependencies\prebuilt\windows-deps-${DepsVersion}-x64\lib\cmake\libobs"
     }
     
-    if ([string]::IsNullOrEmpty($LibObsPath)) {
-        $LibObsPath = "${DepsPath}/lib/cmake/libobs"
+    # For environment variables with hyphens, use the env: drive syntax
+    $FrontendApiPath = if (Test-Path env:obs-frontend-api_DIR) { 
+        (Get-Item env:obs-frontend-api_DIR).Value 
+    } else {
+        Join-Path -Path $ProjectRoot -ChildPath "dependencies\prebuilt\windows-deps-${DepsVersion}-x64\lib\cmake\obs-frontend-api"
     }
     
-    $FrontendApiPath = ""
-    try {
-        # Using single quotes to treat the entire name as a literal string
-        $FrontendApiPath = (Get-Item 'env:obs-frontend-api_DIR' -ErrorAction SilentlyContinue).Value
-    } catch {
-        # If it fails, use the constructed path
+    $W32PthreadsPath = if (Test-Path env:w32-pthreads_DIR) { 
+        (Get-Item env:w32-pthreads_DIR).Value 
+    } else {
+        Join-Path -Path $ProjectRoot -ChildPath "dependencies\prebuilt\windows-deps-${DepsVersion}-x64\lib\cmake\w32-pthreads"
     }
     
-    if ([string]::IsNullOrEmpty($FrontendApiPath)) {
-        $FrontendApiPath = "${DepsPath}/lib/cmake/obs-frontend-api"
-    }
+    $DepsPath = Join-Path -Path $ProjectRoot -ChildPath "dependencies\prebuilt\windows-deps-${DepsVersion}-x64"
     
-    $W32PthreadsPath = ""
-    try {
-        # Using single quotes to treat the entire name as a literal string
-        $W32PthreadsPath = (Get-Item 'env:w32-pthreads_DIR' -ErrorAction SilentlyContinue).Value
-    } catch {
-        # If it fails, use the constructed path
-    }
-    
-    if ([string]::IsNullOrEmpty($W32PthreadsPath)) {
-        $W32PthreadsPath = "${DepsPath}/lib/cmake/w32-pthreads"
-    }
+    Write-Host "Using dependency paths:"
+    Write-Host "  Dependencies: $DepsPath"
+    Write-Host "  libobs: $LibObsPath"
+    Write-Host "  frontend-api: $FrontendApiPath"
+    Write-Host "  w32-pthreads: $W32PthreadsPath"
     
     # Ensure vcpkg toolchain path is correct
-    $VcpkgRoot = (Resolve-Path ".\vcpkg").Path
-    $VcpkgToolchain = Join-Path $VcpkgRoot 'scripts/buildsystems/vcpkg.cmake'
+    $VcpkgRoot = (Resolve-Path "${ProjectRoot}\vcpkg").Path
+    $VcpkgToolchain = Join-Path $VcpkgRoot 'scripts\buildsystems\vcpkg.cmake'
     
     # Add binaries to path so that DLLs can be found
     $env:PATH = "$DepsPath\bin;$env:PATH"
-
+    
     # Convert paths to use forward slashes for CMake
+    $ProjectRootCMake = $ProjectRoot.Replace('\', '/')
+    $BuildDirCMake = $BuildDir.Replace('\', '/')
     $DepsPathCMake = $DepsPath.Replace('\', '/')
     $LibObsPathCMake = $LibObsPath.Replace('\', '/')
     $FrontendApiPathCMake = $FrontendApiPath.Replace('\', '/')
@@ -83,11 +73,11 @@ function Build {
     Write-Host "  frontend-api: $FrontendApiPathCMake"
     Write-Host "  w32-pthreads: $W32PthreadsPathCMake"
     Write-Host "  Vcpkg toolchain: $VcpkgToolchainCMake"
-
+    
     # Build with direct paths
     $CmakeArgs = @(
-        "-S", "${ProjectRoot}",
-        "-B", "${BuildDir}",
+        "-S", "${ProjectRootCMake}",
+        "-B", "${BuildDirCMake}",
         "-G", "Visual Studio 17 2022",
         "-A", "x64",
         "-DCMAKE_TOOLCHAIN_FILE=${VcpkgToolchainCMake}",
