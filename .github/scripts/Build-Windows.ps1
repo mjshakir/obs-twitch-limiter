@@ -9,7 +9,7 @@ param(
 $ErrorActionPreference = 'Stop'
 
 function Build {
-    $ProjectRoot = Resolve-Path -Path "$PSScriptRoot/../.."
+    $ProjectRoot = (Resolve-Path -Path "$PSScriptRoot/../..").Path
     $BuildDir = "${ProjectRoot}/build_x64"
     
     # Create build directory
@@ -58,16 +58,16 @@ function Build {
     # Add binaries to path so that DLLs can be found
     $env:PATH = "$DepsPath\bin;$env:PATH"
     
-    # Convert paths to use forward slashes for CMake
-    $ProjectRootCMake = $ProjectRoot.Replace('\', '/')
-    $BuildDirCMake = $BuildDir.Replace('\', '/')
-    $DepsPathCMake = $DepsPath.Replace('\', '/')
-    $LibObsPathCMake = $LibObsPath.Replace('\', '/')
-    $FrontendApiPathCMake = $FrontendApiPath.Replace('\', '/')
-    $W32PthreadsPathCMake = $W32PthreadsPath.Replace('\', '/')
-    $VcpkgToolchainCMake = $VcpkgToolchain.Replace('\', '/')
+    # Convert paths to use forward slashes for CMake - ensure all paths are strings
+    $ProjectRootCMake = $ProjectRoot.ToString().Replace('\', '/')
+    $BuildDirCMake = $BuildDir.ToString().Replace('\', '/')
+    $DepsPathCMake = $DepsPath.ToString().Replace('\', '/')
+    $LibObsPathCMake = $LibObsPath.ToString().Replace('\', '/')
+    $FrontendApiPathCMake = $FrontendApiPath.ToString().Replace('\', '/')
+    $W32PthreadsPathCMake = $W32PthreadsPath.ToString().Replace('\', '/')
+    $VcpkgToolchainCMake = $VcpkgToolchain.ToString().Replace('\', '/')
 
-    Write-Host "Using dependency paths:"
+    Write-Host "Using CMake-style paths:"
     Write-Host "  Dependencies: $DepsPathCMake"
     Write-Host "  libobs: $LibObsPathCMake"
     Write-Host "  frontend-api: $FrontendApiPathCMake"
