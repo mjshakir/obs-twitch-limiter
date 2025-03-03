@@ -24,7 +24,7 @@ include(helpers)
 add_library(${CMAKE_PROJECT_NAME} MODULE)
 
 if(WIN32)
-  # set(libobs_DIR ${CMAKE_SOURCE_DIR}/.deps/cmake)
+  set(libobs_DIR ${CMAKE_SOURCE_DIR}/.deps/cmake)
   find_package(libobs REQUIRED CONFIG)
   find_package(obs-frontend-api REQUIRED CONFIG)
   find_package(w32-pthreads REQUIRED CONFIG)
