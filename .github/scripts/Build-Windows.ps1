@@ -71,19 +71,6 @@ function Build {
         }
     }
     
-    # If all else fails, try looking in the vcpkg directory
-    if (-not $W32PthreadsPath) {
-        Write-Host "Looking for w32-pthreads in vcpkg installed packages..."
-        $VcpkgInstalled = Join-Path -Path $ProjectRoot -ChildPath "vcpkg\installed"
-        if (Test-Path $VcpkgInstalled) {
-            $W32Files = Get-ChildItem -Path $VcpkgInstalled -Recurse -Filter "w32-pthreads*Config.cmake" -ErrorAction SilentlyContinue
-            foreach ($File in $W32Files) {
-                Write-Host "  Found w32-pthreads config in vcpkg at: $($File.FullName)"
-                $W32PthreadsPath = $File.Directory.FullName
-            }
-        }
-    }
-    
     # Set these paths based on where we know files exist
     $LibObsPath = $DotDepsConfigPath  # Use .deps/cmake for libobs where we know it was found
     if (-not $W32PthreadsPath) {
@@ -96,15 +83,18 @@ function Build {
             New-Item -ItemType Directory -Path $W32PthreadsPath -Force | Out-Null
         }
         
+        # Convert all paths to forward slashes for CMake
+        $DepsPathCMake = $DepsPath.Replace('\', '/')
+        
         $ConfigContent = @"
 # Auto-generated w32-pthreads config file
-set(W32_PTHREADS_INCLUDE_DIRS "${DepsPath}/include")
-set(W32_PTHREADS_LIBRARIES "${DepsPath}/lib/w32-pthreads.lib")
+set(W32_PTHREADS_INCLUDE_DIRS "${DepsPathCMake}/include")
+set(W32_PTHREADS_LIBRARIES "${DepsPathCMake}/lib/w32-pthreads.lib")
 add_library(w32-pthreads SHARED IMPORTED)
 set_target_properties(w32-pthreads PROPERTIES
-    IMPORTED_LOCATION "${DepsPath}/bin/w32-pthreads.dll"
-    IMPORTED_IMPLIB "${DepsPath}/lib/w32-pthreads.lib"
-    INTERFACE_INCLUDE_DIRECTORIES "${DepsPath}/include"
+    IMPORTED_LOCATION "${DepsPathCMake}/bin/w32-pthreads.dll"
+    IMPORTED_IMPLIB "${DepsPathCMake}/lib/w32-pthreads.lib"
+    INTERFACE_INCLUDE_DIRECTORIES "${DepsPathCMake}/include"
 )
 add_library(OBS::w32-pthreads ALIAS w32-pthreads)
 "@
@@ -122,13 +112,13 @@ add_library(OBS::w32-pthreads ALIAS w32-pthreads)
     $env:PATH = "$DepsPath\bin;$env:PATH"
     
     # Convert all paths to forward slashes for CMake
-    $ProjectRootCMake = $ProjectRoot.ToString().Replace('\', '/')
-    $BuildDirCMake = $BuildDir.ToString().Replace('\', '/')
-    $DepsPathCMake = $DepsPath.ToString().Replace('\', '/')
-    $LibObsPathCMake = $LibObsPath.ToString().Replace('\', '/')
-    $FrontendApiPathCMake = $LibObsPath.ToString().Replace('\', '/')
-    $W32PthreadsPathCMake = $W32PthreadsPath.ToString().Replace('\', '/')
-    $VcpkgToolchainCMake = $VcpkgToolchain.ToString().Replace('\', '/')
+    $ProjectRootCMake = $ProjectRoot.Replace('\', '/')
+    $BuildDirCMake = $BuildDir.Replace('\', '/')
+    $DepsPathCMake = $DepsPath.Replace('\', '/')
+    $LibObsPathCMake = $LibObsPath.Replace('\', '/')
+    $FrontendApiPathCMake = $LibObsPath.Replace('\', '/')
+    $W32PthreadsPathCMake = $W32PthreadsPath.Replace('\', '/')
+    $VcpkgToolchainCMake = $VcpkgToolchain.Replace('\', '/')
     
     Write-Host "Using CMake-style paths:"
     Write-Host "  Project root: $ProjectRootCMake"
