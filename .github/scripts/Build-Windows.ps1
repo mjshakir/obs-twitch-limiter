@@ -36,73 +36,9 @@ function Build {
         }
     }
     
-    # Try to find w32-pthreads specifically
-    $W32PthreadsPath = $null
-    $W32PthreadsPaths = @(
-        # Check standard locations
-        "${ProjectRoot}\dependencies\prebuilt\windows-deps-${DepsVersion}-x64\lib\cmake\w32-pthreads",
-        "${DotDepsPath}\lib\cmake\w32-pthreads",
-        "${DotDepsPath}\cmake"
-    )
-    
-    foreach ($Path in $W32PthreadsPaths) {
-        $ConfigFile = Join-Path -Path $Path -ChildPath "w32-pthreadsConfig.cmake"
-        if (Test-Path $ConfigFile) {
-            $W32PthreadsPath = $Path
-            Write-Host "Found w32-pthreadsConfig.cmake at: $ConfigFile"
-            break
-        }
-        
-        $ConfigFile = Join-Path -Path $Path -ChildPath "w32-pthreads-config.cmake"
-        if (Test-Path $ConfigFile) {
-            $W32PthreadsPath = $Path
-            Write-Host "Found w32-pthreads-config.cmake at: $ConfigFile"
-            break
-        }
-    }
-    
-    # If we still can't find w32-pthreads, try looking more broadly
-    if (-not $W32PthreadsPath) {
-        Write-Host "Searching for w32-pthreads config files in all dependencies directories..."
-        $W32Files = Get-ChildItem -Path $ProjectRoot -Recurse -Filter "w32-pthreads*Config.cmake" -ErrorAction SilentlyContinue
-        foreach ($File in $W32Files) {
-            Write-Host "  Found w32-pthreads config at: $($File.FullName)"
-            $W32PthreadsPath = $File.Directory.FullName
-        }
-    }
-    
-    # Set these paths based on where we know files exist
-    $LibObsPath = $DotDepsConfigPath  # Use .deps/cmake for libobs where we know it was found
-    if (-not $W32PthreadsPath) {
-        # If we still can't find w32-pthreads, try a fallback approach
-        Write-Host "Could not find w32-pthreads config file. Will create a simple one..."
-        
-        # Create a simple config file for w32-pthreads
-        $W32PthreadsPath = Join-Path -Path $BuildDir -ChildPath "w32-pthreads-config"
-        if (!(Test-Path $W32PthreadsPath)) {
-            New-Item -ItemType Directory -Path $W32PthreadsPath -Force | Out-Null
-        }
-        
-        # Convert all paths to forward slashes for CMake
-        $DepsPathCMake = $DepsPath.Replace('\', '/')
-        
-        $ConfigContent = @"
-# Auto-generated w32-pthreads config file
-set(W32_PTHREADS_INCLUDE_DIRS "${DepsPathCMake}/include")
-set(W32_PTHREADS_LIBRARIES "${DepsPathCMake}/lib/w32-pthreads.lib")
-add_library(w32-pthreads SHARED IMPORTED)
-set_target_properties(w32-pthreads PROPERTIES
-    IMPORTED_LOCATION "${DepsPathCMake}/bin/w32-pthreads.dll"
-    IMPORTED_IMPLIB "${DepsPathCMake}/lib/w32-pthreads.lib"
-    INTERFACE_INCLUDE_DIRECTORIES "${DepsPathCMake}/include"
-)
-add_library(OBS::w32-pthreads ALIAS w32-pthreads)
-"@
-        
-        $ConfigFilePath = Join-Path -Path $W32PthreadsPath -ChildPath "w32-pthreadsConfig.cmake"
-        Set-Content -Path $ConfigFilePath -Value $ConfigContent
-        Write-Host "Created w32-pthreadsConfig.cmake at: $ConfigFilePath"
-    }
+    # Set paths for libobs and obs-frontend-api
+    $LibObsPath = $DotDepsConfigPath
+    $FrontendApiPath = $DotDepsConfigPath
     
     # Ensure vcpkg toolchain path is correct
     $VcpkgRoot = (Resolve-Path "${ProjectRoot}\vcpkg").Path
@@ -116,18 +52,28 @@ add_library(OBS::w32-pthreads ALIAS w32-pthreads)
     $BuildDirCMake = $BuildDir.Replace('\', '/')
     $DepsPathCMake = $DepsPath.Replace('\', '/')
     $LibObsPathCMake = $LibObsPath.Replace('\', '/')
-    $FrontendApiPathCMake = $LibObsPath.Replace('\', '/')
-    $W32PthreadsPathCMake = $W32PthreadsPath.Replace('\', '/')
+    $FrontendApiPathCMake = $FrontendApiPath.Replace('\', '/')
     $VcpkgToolchainCMake = $VcpkgToolchain.Replace('\', '/')
     
     Write-Host "Using CMake-style paths:"
-    Write-Host "  Project root: $ProjectRootCMake"
-    Write-Host "  Build directory: $BuildDirCMake"
     Write-Host "  Dependencies: $DepsPathCMake"
     Write-Host "  libobs: $LibObsPathCMake"
     Write-Host "  frontend-api: $FrontendApiPathCMake"
-    Write-Host "  w32-pthreads: $W32PthreadsPathCMake"
     Write-Host "  Vcpkg toolchain: $VcpkgToolchainCMake"
+    
+    # For w32-pthreads, instead of creating a config file, we'll pass the include and lib directories directly
+    Write-Host "Checking for w32-pthreads in $DepsPath..."
+    $W32PthreadsInclude = Join-Path -Path $DepsPath -ChildPath "include"
+    $W32PthreadsLib = Join-Path -Path $DepsPath -ChildPath "lib\w32-pthreads.lib"
+    
+    if (!(Test-Path $W32PthreadsLib)) {
+        Write-Host "Could not find w32-pthreads.lib in $W32PthreadsLib"
+        $W32PthreadsLibSearch = Get-ChildItem -Path $DepsPath -Recurse -Filter "w32-pthreads.lib" -ErrorAction SilentlyContinue
+        if ($W32PthreadsLibSearch) {
+            $W32PthreadsLib = $W32PthreadsLibSearch[0].FullName
+            Write-Host "Found w32-pthreads.lib at: $W32PthreadsLib"
+        }
+    }
     
     # Build with direct paths
     $CmakeArgs = @(
@@ -142,9 +88,28 @@ add_library(OBS::w32-pthreads ALIAS w32-pthreads)
         "-DENABLE_QT=ON",
         "-Dlibobs_DIR=${LibObsPathCMake}",
         "-Dobs-frontend-api_DIR=${FrontendApiPathCMake}",
-        "-Dw32-pthreads_DIR=${W32PthreadsPathCMake}",
         "-DOBS_WEBRTC_ENABLED=OFF"
     )
+    
+    # Modify the CMakeLists.txt to avoid attempting to find w32-pthreads package
+    Write-Host "Modifying CMakeLists.txt to avoid w32-pthreads package finding..."
+    $CmakeListsPath = Join-Path -Path $ProjectRoot -ChildPath "CMakeLists.txt"
+    $CmakeListsContent = Get-Content -Path $CmakeListsPath -Raw
+    
+    # Check if already modified
+    if ($CmakeListsContent -notmatch "# Modified for w32-pthreads") {
+        # Look for the find_package(w32-pthreads REQUIRED CONFIG) line
+        $ModifiedContent = $CmakeListsContent -replace "find_package\(w32-pthreads REQUIRED CONFIG\)", "# Modified for w32-pthreads: Skipping find_package for w32-pthreads"
+        
+        # Add direct link to w32-pthreads instead of using find_package
+        $ModifiedContent = $ModifiedContent -replace "target_link_libraries\(\$\{CMAKE_PROJECT_NAME\} PRIVATE OBS::w32-pthreads\)", "# Use direct path to w32-pthreads library`ntarget_include_directories(`${CMAKE_PROJECT_NAME} PRIVATE `"$($W32PthreadsInclude.Replace('\', '/'))`")`ntarget_link_libraries(`${CMAKE_PROJECT_NAME} PRIVATE `"$($W32PthreadsLib.Replace('\', '/'))`")"
+        
+        # Write the modified content back to the file
+        Set-Content -Path $CmakeListsPath -Value $ModifiedContent
+        Write-Host "CMakeLists.txt modified successfully."
+    } else {
+        Write-Host "CMakeLists.txt already modified."
+    }
     
     Write-Host "Configuring with CMake..."
     Write-Host "CMake args: $($CmakeArgs -join ' ')"
